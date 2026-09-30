@@ -3,24 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { Card, Badge, Button, SeverityBadge } from '@/components/common/UI';
 import { AIExplainer, AIBadge } from '@/components/common/AIExplainer';
 import { AnimatedCounter } from '@/components/common/AnimatedCounter';
-import { getFeedbackStats, getSentimentTrend, getTodaysFeedback, subscribeFeedbackChange } from '@/services/feedbackService';
-import { getCriticalIssues, getAllIssues, subscribeIssueChange } from '@/services/issueService';
-import { getAllAlerts } from '@/services/alertService';
-import { getActionStats, subscribeActionChange } from '@/services/actionService';
-import { generateDailySummary, generateRecommendations } from '@/services/aiService';
+import { getFeedbackStats, getSentimentTrend, getTodaysFeedback, subscribeFeedbackChange, fetchFeedback } from '@/services/feedbackService';
+import { getCriticalIssues, getAllIssues, subscribeIssueChange, fetchIssues } from '@/services/issueService';
+import { getAllAlerts, fetchAlerts } from '@/services/alertService';
+import { getActionStats, subscribeActionChange, fetchActions } from '@/services/actionService';
+import { fetchInstitutionStats, fetchTrends, fetchThemes } from '@/services/analyticsService';
 import { Activity, AlertTriangle, MessageSquare, TrendingUp, TrendingDown, Bell, CheckSquare, Zap, Radio, Sparkles, ChevronRight, Brain } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import type { Severity } from '@/types';
-
-const pulseNodes = [
-  { name: 'Teaching', angle: 0, volume: 85, severity: 'medium' as Severity, color: '#3b82f6' },
-  { name: 'Labs', angle: 51, volume: 120, severity: 'high' as Severity, color: '#8b5cf6' },
-  { name: 'Internet', angle: 102, volume: 95, severity: 'critical' as Severity, color: '#06b6d4' },
-  { name: 'Placement', angle: 154, volume: 60, severity: 'high' as Severity, color: '#10b981' },
-  { name: 'Infrastructure', angle: 205, volume: 45, severity: 'medium' as Severity, color: '#f97316' },
-  { name: 'Hostel', angle: 257, volume: 110, severity: 'critical' as Severity, color: '#ef4444' },
-  { name: 'Transport', angle: 308, volume: 55, severity: 'medium' as Severity, color: '#14b8a6' },
-];
+import type { Severity, Theme, Department } from '@/types';
+import { useAuth } from '@/context/AuthContext';
+import { Building } from 'lucide-react';
 
 const severityGlow: Record<Severity, string> = {
   critical: 'shadow-red-500/50',
@@ -36,18 +28,17 @@ const severitySize: Record<Severity, number> = {
   low: 32,
 };
 
-const liveFeedEvents = [
-  { time: '10:42 AM', text: '12 new feedback responses received', icon: MessageSquare, color: 'text-blue-500' },
-  { time: '10:45 AM', text: 'AI detected recurring issue: "Laboratory Wi-Fi"', icon: Brain, color: 'text-violet-500' },
-  { time: '10:48 AM', text: 'Issue priority changed: Medium → High', icon: TrendingUp, color: 'text-orange-500' },
-  { time: '10:52 AM', text: 'Corrective action created for Laboratory Systems', icon: CheckSquare, color: 'text-emerald-500' },
-  { time: '10:55 AM', text: 'New critical alert: Hostel Water Supply', icon: AlertTriangle, color: 'text-red-500' },
-  { time: '11:02 AM', text: 'Improvement detected: Canteen complaints -38%', icon: TrendingDown, color: 'text-green-500' },
-];
-
-import type { Department } from '@/types';
-import { useAuth } from '@/context/AuthContext';
-import { Building } from 'lucide-react';
+const categoryColors: Record<string, string> = {
+  Academics: '#3b82f6',
+  Teaching: '#3b82f6',
+  Infrastructure: '#f97316',
+  Labs: '#8b5cf6',
+  Hostel: '#ef4444',
+  Canteen: '#eab308',
+  Transport: '#14b8a6',
+  Internet: '#06b6d4',
+  Placement: '#10b981',
+};
 
 export function HodDashboard() {
   const navigate = useNavigate();
@@ -59,19 +50,73 @@ export function HodDashboard() {
   const [criticalIssues, setCriticalIssues] = useState(() => getCriticalIssues(currentDept));
   const [allIssues, setAllIssues] = useState(() => getAllIssues(currentDept));
   const [todaysCount, setTodaysCount] = useState(() => getTodaysFeedback(currentDept).length);
+  const [themes, setThemes] = useState<Theme[]>([]);
+  const [recentFeed, setRecentFeed] = useState<any[]>([]);
   const alerts = getAllAlerts(currentDept);
   const actionStats = getActionStats(currentDept);
-  const summary = generateDailySummary(currentDept);
-  const recommendations = generateRecommendations(currentDept);
   const [activeNode, setActiveNode] = useState<string | null>(null);
   const [visibleEvents, setVisibleEvents] = useState(1);
 
+  const recommendations = criticalIssues.length > 0
+    ? criticalIssues.slice(0, 3).map(i => `Prioritize remediation plan for "${i.title}" (${i.complaintCount} complaints).`)
+    : ['All departmental feedback indicators are performing within benchmark targets.'];
+
   useEffect(() => {
-    setStats(getFeedbackStats(currentDept));
-    setTrend(getSentimentTrend(7, currentDept));
-    setCriticalIssues(getCriticalIssues(currentDept));
-    setAllIssues(getAllIssues(currentDept));
-    setTodaysCount(getTodaysFeedback(currentDept).length);
+    fetchFeedback({ department: currentDept }).then(data => {
+      if (Array.isArray(data)) {
+        setRecentFeed(data.slice(0, 6));
+      }
+    }).catch(() => {});
+    fetchAlerts(currentDept).catch(() => {});
+    fetchActions(currentDept).then(actions => {
+      if (Array.isArray(actions)) {
+        const inProg = actions.filter(a => a.status === 'in_progress').length;
+        setStats(prev => ({ ...prev, inProgress: inProg }));
+      }
+    }).catch(() => {});
+    fetchThemes(currentDept).then(data => {
+      if (Array.isArray(data)) {
+        setThemes(data);
+      }
+    }).catch(() => {});
+    fetchInstitutionStats(currentDept).then(data => {
+      if (data) {
+        const kpis = data.kpis || data;
+        const total = kpis.totalFeedback ?? data.totalFeedback ?? 0;
+        const resolved = kpis.resolvedFeedback ?? data.resolvedFeedbackCount ?? 0;
+        setStats(prev => ({
+          ...prev,
+          total,
+          positive: data.sentimentDistribution?.positive ?? 0,
+          negative: data.sentimentDistribution?.negative ?? 0,
+          neutral: data.sentimentDistribution?.neutral ?? 0,
+          positivePercent: kpis.satisfactionRate ?? data.satisfactionScore ?? data.positivePercentage ?? 0,
+          negativePercent: kpis.negativeRate ?? data.negativePercentage ?? 0,
+          neutralPercent: data.neutralPercentage ?? 0,
+          resolved,
+          inProgress: data.actionsInProgressCount ?? prev.inProgress ?? 0,
+          underReview: 0,
+          resolutionRate: total > 0 ? Math.round((resolved / total) * 100) : 0,
+        }));
+        setTodaysCount(kpis.todayFeedback ?? data.todayFeedback ?? 0);
+      }
+    }).catch(() => {});
+    fetchTrends(7, currentDept).then(trendsData => {
+      if (trendsData?.series && Array.isArray(trendsData.series)) {
+        setTrend(trendsData.series);
+      } else if (trendsData?.trend && Array.isArray(trendsData.trend)) {
+        setTrend(trendsData.trend);
+      }
+    }).catch(() => {});
+    fetchIssues(currentDept).then(issueList => {
+      if (Array.isArray(issueList)) {
+        setAllIssues(issueList);
+        setCriticalIssues(issueList.filter(i => i.severity === 'critical'));
+      }
+    }).catch(() => {
+      setCriticalIssues(getCriticalIssues(currentDept));
+      setAllIssues(getAllIssues(currentDept));
+    });
   }, [currentDept]);
 
   useEffect(() => {
@@ -84,7 +129,10 @@ export function HodDashboard() {
       setCriticalIssues(getCriticalIssues(currentDept));
       setAllIssues(getAllIssues(currentDept));
     });
-    const unsubAct = subscribeActionChange(() => {
+    const unsubAct = subscribeActionChange((acts) => {
+      const deptActs = acts.filter(a => a.department === currentDept || a.department === 'ALL');
+      const inProg = deptActs.filter(a => a.status === 'in_progress').length;
+      setStats(prev => ({ ...prev, inProgress: inProg }));
       setCriticalIssues(getCriticalIssues(currentDept));
       setAllIssues(getAllIssues(currentDept));
     });
@@ -95,15 +143,36 @@ export function HodDashboard() {
     };
   }, [currentDept]);
 
+  const liveFeedEvents = recentFeed.map(fb => {
+    const text = fb.comment || fb.feedbackText || '';
+    return {
+      time: fb.createdAt ? new Date(fb.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (fb.date ? new Date(fb.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent'),
+      text: `[${fb.category || 'General'}] ${text.slice(0, 60)}${text.length > 60 ? '...' : ''}`,
+      icon: fb.sentiment === 'positive' ? TrendingUp : fb.sentiment === 'negative' ? AlertTriangle : MessageSquare,
+      color: fb.sentiment === 'positive' ? 'text-emerald-500' : fb.sentiment === 'negative' ? 'text-red-500' : 'text-blue-500',
+    };
+  });
+
   useEffect(() => {
     const interval = setInterval(() => {
-      setVisibleEvents(prev => Math.min(prev + 1, liveFeedEvents.length));
+      setVisibleEvents(prev => Math.min(prev + 1, Math.max(1, liveFeedEvents.length)));
     }, 800);
     return () => clearInterval(interval);
-  }, []);
+  }, [liveFeedEvents.length]);
 
   const radius = 130;
   const center = 175;
+
+  const pulseNodes = themes.map((t, idx) => {
+    const angle = Math.round((idx / Math.max(1, themes.length)) * 360);
+    return {
+      name: t.name,
+      angle,
+      volume: t.responses,
+      severity: t.priority,
+      color: categoryColors[t.name] || categoryColors[t.category] || '#6366f1',
+    };
+  });
 
   return (
     <div>
@@ -135,24 +204,24 @@ export function HodDashboard() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <Card className="p-5" hover onClick={() => navigate('/hod/feedback')}>
+        <Card className="p-5" hover onClick={() => navigate('/hod/forms')}>
           <div className="flex items-center gap-2 mb-2">
             <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
               <MessageSquare size={18} className="text-blue-600 dark:text-blue-400" />
             </div>
             <span className="text-xs text-slate-400">Today's Feedback</span>
           </div>
-          <p className="text-3xl font-bold text-slate-800 dark:text-slate-100"><AnimatedCounter value={todaysCount > 0 ? todaysCount : 126} /></p>
+          <p className="text-3xl font-bold text-slate-800 dark:text-slate-100"><AnimatedCounter value={todaysCount} /></p>
           <p className="text-xs text-slate-400 mt-1">responses today</p>
         </Card>
-        <Card className="p-5" hover onClick={() => navigate('/hod/feedback')}>
+        <Card className="p-5" hover onClick={() => navigate('/hod/forms')}>
           <div className="flex items-center gap-2 mb-2">
             <div className="h-9 w-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
               <TrendingUp size={18} className="text-emerald-600 dark:text-emerald-400" />
             </div>
             <span className="text-xs text-slate-400">Positive</span>
           </div>
-          <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400"><AnimatedCounter value={stats.positivePercent || 78} suffix="%" /></p>
+          <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400"><AnimatedCounter value={stats.positivePercent || 0} suffix="%" /></p>
           <p className="text-xs text-slate-400 mt-1">of responses</p>
         </Card>
         <Card className="p-5" hover onClick={() => navigate('/hod/issues')}>
@@ -162,17 +231,17 @@ export function HodDashboard() {
             </div>
             <span className="text-xs text-slate-400">Active Issues</span>
           </div>
-          <p className="text-3xl font-bold text-slate-800 dark:text-slate-100"><AnimatedCounter value={allIssues.filter(i => i.status !== 'resolved').length || 14} /></p>
+          <p className="text-3xl font-bold text-slate-800 dark:text-slate-100"><AnimatedCounter value={allIssues.filter(i => i.status !== 'resolved').length} /></p>
           <p className="text-xs text-slate-400 mt-1">needs attention</p>
         </Card>
-        <Card className="p-5" hover onClick={() => navigate('/hod/alerts')}>
+        <Card className="p-5" hover onClick={() => navigate('/hod/issues')}>
           <div className="flex items-center gap-2 mb-2">
             <div className="h-9 w-9 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
               <Zap size={18} className="text-red-600 dark:text-red-400" />
             </div>
             <span className="text-xs text-slate-400">Critical Issues</span>
           </div>
-          <p className="text-3xl font-bold text-red-600 dark:text-red-400"><AnimatedCounter value={criticalIssues.length || 4} /></p>
+          <p className="text-3xl font-bold text-red-600 dark:text-red-400"><AnimatedCounter value={criticalIssues.length} /></p>
           <p className="text-xs text-slate-400 mt-1">critical alerts</p>
         </Card>
       </div>
@@ -183,7 +252,6 @@ export function HodDashboard() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <AIBadge>AI Institutional Pulse</AIBadge>
-              <span className="text-xs text-slate-400">Demo Data</span>
             </div>
             <AIExplainer insightType="theme" />
           </div>
@@ -259,22 +327,26 @@ export function HodDashboard() {
             <span className="text-xs text-red-500 font-medium animate-pulse">LIVE</span>
           </div>
           <div className="space-y-3 flex-1 overflow-hidden">
-            {liveFeedEvents.slice(0, visibleEvents).map((event, i) => {
-              const Icon = event.icon;
-              return (
-                <div key={i} className="flex items-start gap-3 animate-in fade-in slide-in-from-left-2 duration-300">
-                  <div className={`h-8 w-8 rounded-lg bg-slate-50 dark:bg-slate-700/30 flex items-center justify-center flex-shrink-0 ${event.color}`}>
-                    <Icon size={14} />
+            {liveFeedEvents.length > 0 ? (
+              liveFeedEvents.slice(0, visibleEvents).map((event, i) => {
+                const Icon = event.icon;
+                return (
+                  <div key={i} className="flex items-start gap-3 animate-in fade-in slide-in-from-left-2 duration-300">
+                    <div className={`h-8 w-8 rounded-lg bg-slate-50 dark:bg-slate-700/30 flex items-center justify-center flex-shrink-0 ${event.color}`}>
+                      <Icon size={14} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{event.time}</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-200">{event.text}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{event.time}</p>
-                    <p className="text-sm text-slate-700 dark:text-slate-200">{event.text}</p>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <p className="text-xs text-slate-400 text-center py-6">No recent feedback stream activity for {currentDept}.</p>
+            )}
           </div>
-          <Button variant="ghost" size="sm" className="mt-3" onClick={() => navigate('/hod/feedback')}>View All Feedback</Button>
+          <Button variant="ghost" size="sm" className="mt-3" onClick={() => navigate('/hod/forms')}>View All Feedback</Button>
         </Card>
       </div>
 
@@ -321,18 +393,24 @@ export function HodDashboard() {
           <h3 className="font-semibold text-slate-800 dark:text-slate-100">Critical Issues</h3>
           <Button variant="ghost" size="sm" onClick={() => navigate('/hod/issues')}>View All <ChevronRight size={14} /></Button>
         </div>
-        <div className="grid sm:grid-cols-2 gap-3">
-          {criticalIssues.map(issue => (
-            <div key={issue.id} className="flex items-center gap-3 p-3 rounded-xl bg-red-50/50 dark:bg-red-900/10 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" onClick={() => navigate(`/hod/issues/${issue.id}`)}>
-              <AlertTriangle size={18} className="text-red-500 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{issue.title}</p>
-                <p className="text-xs text-slate-400">{issue.complaintCount} complaints · {issue.negativePercent}% negative</p>
+        {criticalIssues.length > 0 ? (
+          <div className="grid sm:grid-cols-2 gap-3">
+            {criticalIssues.map(issue => (
+              <div key={issue.id} className="flex items-center gap-3 p-3 rounded-xl bg-red-50/50 dark:bg-red-900/10 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" onClick={() => navigate(`/hod/issues/${issue.id}`)}>
+                <AlertTriangle size={18} className="text-red-500 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{issue.title}</p>
+                  <p className="text-xs text-slate-400">
+                    {(issue.feedbackCount ?? issue.complaintCount ?? 0)} complaints{issue.negativePercent != null ? ` · ${issue.negativePercent}% negative` : (issue.category ? ` · ${issue.category}` : '')}
+                  </p>
+                </div>
+                <ChevronRight size={16} className="text-slate-300" />
               </div>
-              <ChevronRight size={16} className="text-slate-300" />
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-400 text-center py-6">No critical issues detected for {currentDept}.</p>
+        )}
       </Card>
     </div>
   );

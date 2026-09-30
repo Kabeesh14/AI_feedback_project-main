@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Badge, Button } from '@/components/common/UI';
-import { getAllAlerts, markAlertRead, markAllRead, getAlertStats } from '@/services/alertService';
+import { getAllAlerts, fetchAlerts, markAlertRead, markAllRead, getAlertStats } from '@/services/alertService';
 import { AlertTriangle, AlertCircle, CheckCircle, Info, Bell, Clock } from 'lucide-react';
 import type { Role } from '@/types';
 import { useAuth } from '@/context/AuthContext';
@@ -30,18 +30,28 @@ export function AlertsPage({ role }: { role: Role }) {
   const stats = getAlertStats(effectiveDept);
 
   useEffect(() => {
-    setAlerts(getAllAlerts(effectiveDept));
+    let mounted = true;
+    async function load() {
+      try {
+        const live = await fetchAlerts(effectiveDept);
+        if (mounted) setAlerts(live);
+      } catch {
+        if (mounted) setAlerts(getAllAlerts(effectiveDept));
+      }
+    }
+    load();
+    return () => { mounted = false; };
   }, [effectiveDept]);
 
   const filtered = filter === 'all' ? alerts : filter === 'unread' ? alerts.filter(a => !a.read) : alerts.filter(a => a.severity === filter);
 
-  const handleMarkRead = (id: string) => {
-    markAlertRead(id);
+  const handleMarkRead = async (id: string) => {
+    await markAlertRead(id);
     setAlerts(getAllAlerts(effectiveDept));
   };
 
-  const handleMarkAllRead = () => {
-    markAllRead();
+  const handleMarkAllRead = async () => {
+    await markAllRead();
     setAlerts(getAllAlerts(effectiveDept));
   };
 

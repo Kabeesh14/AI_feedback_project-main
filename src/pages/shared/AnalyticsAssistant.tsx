@@ -18,7 +18,7 @@ const suggestedQuestions = [
 
 export function AnalyticsAssistant({ role }: { role: Role }) {
   const { user } = useAuth();
-  const effectiveDept = role === 'hod' ? user?.department : (user?.department || undefined);
+  const effectiveDept = (role === 'hod' || role === 'faculty') ? user?.department : (user?.department || undefined);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -114,7 +114,7 @@ export function AnalyticsAssistant({ role }: { role: Role }) {
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-1">
           <AIBadge>AI Powered</AIBadge>
-          <span className="text-xs text-slate-400">Demo Data</span>
+          <span className="text-xs text-slate-400">Query Assistant</span>
         </div>
         <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Ask FeedbackIQ</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">

@@ -1,7 +1,9 @@
 import { Card, Badge, Button } from '@/components/common/UI';
-import { generateNotifications } from '@/services/mockData';
 import { AlertTriangle, CheckCircle, Info, AlertCircle, Bell, Clock } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { fetchActions } from '@/services/actionService';
+import type { Notification } from '@/types';
 
 const typeConfig: Record<string, { icon: typeof AlertTriangle; color: string; bg: string }> = {
   critical_issue: { icon: AlertTriangle, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20' },
@@ -22,8 +24,34 @@ const timeAgo = (ts: string) => {
 };
 
 export function StudentNotifications() {
-  const [notifications, setNotifications] = useState(generateNotifications());
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<string>('all');
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadNotifications() {
+      try {
+        const portal = user?.portal || 'education';
+        const actions = await fetchActions(user?.department, { portal }).catch(() => []);
+        if (mounted && actions && actions.length > 0) {
+          const generated: Notification[] = actions.slice(0, 10).map((a, i) => ({
+            id: `notif-act-${a.id || i}`,
+            type: a.priority === 'critical' ? 'critical_issue' : 'action_created',
+            title: a.title || a.action,
+            message: a.description || `Corrective action status: ${(a.status || 'planned').replace('_', ' ')} (${a.department || a.portal || 'Campus'})`,
+            timestamp: a.createdAt || new Date().toISOString(),
+            read: false
+          }));
+          setNotifications(generated);
+        }
+      } catch (err) {
+        console.warn('Failed to load action notifications:', err);
+      }
+    }
+    loadNotifications();
+    return () => { mounted = false; };
+  }, [user?.portal, user?.department]);
 
   const filtered = filter === 'all' ? notifications : filter === 'unread' ? notifications.filter(n => !n.read) : notifications.filter(n => n.type === filter);
 
@@ -52,7 +80,17 @@ export function StudentNotifications() {
           { value: 'improvement', label: 'Improvements' },
           { value: 'action_created', label: 'Actions' },
         ].map(f => (
-          <button key={f.value} onClick={() => setFilter(f.value)} className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${filter === f.value ? 'bg-blue-600 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>{f.label}</button>
+          <button
+            key={f.value}
+            onClick={() => setFilter(f.value)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all backdrop-blur-md ${
+              filter === f.value
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-[0_0_12px_rgba(6,182,212,0.2)]'
+                : 'bg-white/60 dark:bg-white/[0.04] text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-white/10 hover:border-cyan-400/30'
+            }`}
+          >
+            {f.label}
+          </button>
         ))}
       </div>
 
@@ -60,14 +98,22 @@ export function StudentNotifications() {
         {filtered.length === 0 ? (
           <Card className="p-12 text-center">
             <Bell size={40} className="text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-            <p className="text-sm text-slate-400">No notifications to display</p>
+            <p className="text-sm text-slate-300 font-medium">No notifications for {user?.portal === 'bus' ? 'Bus Transport' : user?.portal === 'hostel' ? 'Hostel Residence' : 'Academic Education'}</p>
+            <p className="text-xs text-slate-500 mt-1">You are all caught up with your recent feedback updates and institutional notices.</p>
           </Card>
         ) : (
           filtered.map(n => {
             const cfg = typeConfig[n.type] || typeConfig.info;
             const Icon = cfg.icon;
             return (
-              <Card key={n.id} className={`p-4 cursor-pointer transition-all ${!n.read ? 'ring-1 ring-blue-200 dark:ring-blue-800' : ''}`} hover onClick={() => markRead(n.id)}>
+              <Card
+                key={n.id}
+                className={`p-4 cursor-pointer transition-all ${
+                  !n.read ? 'ring-1 ring-cyan-400/50 shadow-[0_0_15px_rgba(6,182,212,0.15)]' : ''
+                }`}
+                hover
+                onClick={() => markRead(n.id)}
+              >
                 <div className="flex items-start gap-3">
                   <div className={`h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 ${cfg.bg}`}>
                     <Icon size={18} className={cfg.color} />
@@ -75,7 +121,7 @@ export function StudentNotifications() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{n.title}</p>
-                      {!n.read && <span className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0 animate-pulse" />}
+                      {!n.read && <span className="h-2 w-2 rounded-full bg-cyan-400 flex-shrink-0 shadow-[0_0_8px_rgba(6,182,212,0.8)] animate-pulse" />}
                     </div>
                     <p className="text-sm text-slate-500 dark:text-slate-400">{n.message}</p>
                     <p className="text-xs text-slate-400 mt-1">{timeAgo(n.timestamp)}</p>

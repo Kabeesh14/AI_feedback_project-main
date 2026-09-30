@@ -1,15 +1,94 @@
 import type { Theme, DepartmentMetric, CampusArea, Severity, Category } from '@/types';
-import { generateThemes, generateDepartmentMetrics, generateCampusAreas } from './mockData';
 import { getCategoryBreakdown, getFeedbackStats, getTodaysFeedback } from './feedbackService';
 import { getAllIssues, getCriticalIssues } from './issueService';
 import { getAllActions } from './actionService';
+import { apiClient } from './apiClient';
 
-const themes: Theme[] = generateThemes();
-const departmentMetrics: DepartmentMetric[] = generateDepartmentMetrics();
-const campusAreas: CampusArea[] = generateCampusAreas();
+let themes: Theme[] = [];
+let departmentMetrics: DepartmentMetric[] = [];
+let campusAreas: CampusArea[] = [];
 
 function isAllDept(dept?: string | null): boolean {
   return !dept || dept === 'ALL' || dept === 'all' || dept === 'All Departments';
+}
+
+/**
+ * Fetch live dashboard metrics from backend /api/analytics/dashboard
+ */
+export async function fetchInstitutionStats(dept?: string | null) {
+  const params: Record<string, any> = {};
+  if (dept && !isAllDept(dept)) {
+    params.department = dept;
+  }
+  const res = await apiClient.get('/analytics/dashboard', { params });
+  return res.data;
+}
+
+/**
+ * Fetch live Pulse score from backend /api/analytics/pulse
+ */
+export async function fetchPulse(dept?: string | null) {
+  const params: Record<string, any> = {};
+  if (dept && !isAllDept(dept)) {
+    params.department = dept;
+  }
+  const res = await apiClient.get('/analytics/pulse', { params });
+  return res.data;
+}
+
+/**
+ * Fetch live "What Changed Today" summary from backend /api/analytics/summary
+ */
+export async function fetchSummary(dept?: string | null) {
+  const params: Record<string, any> = {};
+  if (dept && !isAllDept(dept)) {
+    params.department = dept;
+  }
+  const res = await apiClient.get('/analytics/summary', { params });
+  return res.data;
+}
+
+/**
+ * Fetch live theme analytics from backend /api/analytics/themes
+ */
+export async function fetchThemes(dept?: string | null): Promise<Theme[]> {
+  const params: Record<string, any> = {};
+  if (dept && !isAllDept(dept)) {
+    params.department = dept;
+  }
+  const res = await apiClient.get('/analytics/themes', { params });
+  if (res.success && Array.isArray(res.data?.themes)) {
+    return res.data.themes.map((t: any) => ({
+      name: t.theme || t.name,
+      category: (t.category || t.theme) as Category,
+      responses: t.feedbackCount || t.responses || 0,
+      positivePercent: t.positivePercent || 0,
+      negativePercent: t.negativePercent || 0,
+      trend: Array.isArray(t.trend) ? t.trend : [1, 2, 3, 2, 4, 3, 2],
+      priority: (t.priority || 'medium').toLowerCase() as Severity,
+    }));
+  }
+  return [];
+}
+
+/**
+ * Fetch live time-series trends from backend /api/analytics/trends
+ */
+export async function fetchTrends(days: number = 7, dept?: string | null) {
+  const params: Record<string, any> = { days };
+  if (dept && !isAllDept(dept)) {
+    params.department = dept;
+  }
+  const res = await apiClient.get('/analytics/trends', { params });
+  return res.data;
+}
+
+/**
+ * Fetch live 9-department comparison matrix from backend /api/analytics/department-comparison
+ */
+export async function fetchDepartmentComparison() {
+  const res = await apiClient.get('/analytics/department-comparison');
+  return res.data;
 }
 
 export function getAllThemes(dept?: string | null): Theme[] {
@@ -77,18 +156,18 @@ export function getInstitutionStats(dept?: string | null) {
     const todays = getTodaysFeedback(dept);
 
     return {
-      totalFeedbackToday: todays.length > 0 ? todays.length : 38,
-      institutionSatisfaction: fbStats.positivePercent || 80,
-      activeIssues: deptIssues.filter(i => i.status !== 'resolved').length || 6,
-      criticalIssues: critIssues.length || 2,
-      actionsInProgress: deptActions.filter(a => a.status === 'in_progress').length || 2,
+      totalFeedbackToday: todays.length,
+      institutionSatisfaction: fbStats.positivePercent || 0,
+      activeIssues: deptIssues.filter(i => i.status !== 'resolved').length,
+      criticalIssues: critIssues.length,
+      actionsInProgress: deptActions.filter(a => a.status === 'in_progress').length,
       totalDepartments: 1,
-      totalStudents: 540,
-      avgResolutionTime: 3.8,
-      improvementRate: 24,
-      responseRate: 88,
+      totalStudents: 0,
+      avgResolutionTime: 0,
+      improvementRate: 0,
+      responseRate: 0,
       campusAreas: campusAreas.length,
-      themes: 10,
+      themes: themes.length,
       topIssues: critIssues.slice(0, 3).map(i => ({
         name: i.title,
         department: dept!,
@@ -104,23 +183,22 @@ export function getInstitutionStats(dept?: string | null) {
   const allFbStats = getFeedbackStats();
 
   return {
-    totalFeedbackToday: allTodays > 0 ? allTodays : 1248,
-    institutionSatisfaction: allFbStats.positivePercent || 82,
-    activeIssues: allActiveIssues || 47,
-    criticalIssues: allCritIssues || 6,
-    actionsInProgress: allActionsProg || 18,
+    totalFeedbackToday: allTodays,
+    institutionSatisfaction: allFbStats.positivePercent || 0,
+    activeIssues: allActiveIssues,
+    criticalIssues: allCritIssues,
+    actionsInProgress: allActionsProg,
     totalDepartments: 9,
-    totalStudents: 4840,
-    avgResolutionTime: 4.2,
-    improvementRate: 23,
-    responseRate: 87,
+    totalStudents: 0,
+    avgResolutionTime: 0,
+    improvementRate: 0,
+    responseRate: 0,
     campusAreas: campusAreas.length,
     themes: themes.length,
-    topIssues: [
-      { name: 'Laboratory Wi-Fi', department: 'Civil Engineering', severity: 'critical' as const },
-      { name: 'Hostel Water Supply', department: 'Mechanical Engineering', severity: 'critical' as const },
-      { name: 'Placement Training', department: 'Artificial Intelligence & Data Science', severity: 'high' as const },
-    ],
+    topIssues: getCriticalIssues().slice(0, 3).map(i => ({
+      name: i.title,
+      department: i.department,
+      severity: i.severity,
+    })),
   };
 }
-

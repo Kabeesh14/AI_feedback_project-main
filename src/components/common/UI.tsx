@@ -5,8 +5,8 @@ export function Card({ children, className = '', onClick, hover = false }: { chi
   return (
     <div
       onClick={onClick}
-      className={`bg-white dark:bg-slate-800/60 backdrop-blur-sm rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm ${
-        hover ? 'transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer' : ''
+      className={`bg-white/80 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-lg text-slate-800 dark:text-slate-100 ${
+        hover ? 'transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] hover:border-cyan-400/40 hover:-translate-y-0.5 cursor-pointer' : ''
       } ${className}`}
     >
       {children}
@@ -16,18 +16,18 @@ export function Card({ children, className = '', onClick, hover = false }: { chi
 
 export function Badge({ children, variant = 'default', className = '' }: { children: ReactNode; variant?: 'default' | 'critical' | 'high' | 'medium' | 'low' | 'positive' | 'negative' | 'neutral' | 'ai' | 'info' | 'success' | 'warning'; className?: string }) {
   const variants: Record<string, string> = {
-    default: 'bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-300',
-    critical: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-    high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-    medium: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-    low: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-    positive: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-    negative: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-    neutral: 'bg-slate-100 text-slate-600 dark:bg-slate-700/50 dark:text-slate-300',
-    ai: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
-    info: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-    success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-    warning: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    default: 'bg-slate-100 text-slate-600 dark:bg-white/[0.08] dark:text-slate-200 dark:border dark:border-white/10',
+    critical: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300 dark:border dark:border-red-500/25',
+    high: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300 dark:border dark:border-orange-500/25',
+    medium: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 dark:border dark:border-amber-500/25',
+    low: 'bg-blue-100 text-blue-700 dark:bg-cyan-500/15 dark:text-cyan-300 dark:border dark:border-cyan-500/25',
+    positive: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border dark:border-emerald-500/25',
+    negative: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300 dark:border dark:border-red-500/25',
+    neutral: 'bg-slate-100 text-slate-600 dark:bg-white/[0.08] dark:text-slate-300 dark:border dark:border-white/10',
+    ai: 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 dark:border dark:border-violet-500/30',
+    info: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 dark:border dark:border-blue-500/25',
+    success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border dark:border-emerald-500/25',
+    warning: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 dark:border dark:border-amber-500/25',
   };
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${variants[variant]} ${className}`}>
@@ -36,46 +36,58 @@ export function Badge({ children, variant = 'default', className = '' }: { child
   );
 }
 
-export function SeverityBadge({ severity }: { severity: Severity }) {
-  const map: Record<Severity, { variant: 'critical' | 'high' | 'medium' | 'low'; label: string }> = {
+export function SeverityBadge({ severity }: { severity?: Severity | string }) {
+  const map: Record<string, { variant: 'critical' | 'high' | 'medium' | 'low'; label: string }> = {
     critical: { variant: 'critical', label: 'Critical' },
     high: { variant: 'high', label: 'High' },
     medium: { variant: 'medium', label: 'Medium' },
     low: { variant: 'low', label: 'Low' },
   };
-  const { variant, label } = map[severity];
+  const normalized = (severity || 'medium').toLowerCase();
+  const { variant, label } = map[normalized] || { variant: 'medium', label: severity || 'Medium' };
   return <Badge variant={variant}>{label}</Badge>;
 }
 
-export function SentimentBadge({ sentiment }: { sentiment: Sentiment }) {
-  const map: Record<Sentiment, { variant: 'positive' | 'negative' | 'neutral'; label: string }> = {
+export function SentimentBadge({ sentiment }: { sentiment?: Sentiment | string }) {
+  const map: Record<string, { variant: 'positive' | 'negative' | 'neutral'; label: string }> = {
     positive: { variant: 'positive', label: 'Positive' },
     negative: { variant: 'negative', label: 'Negative' },
     neutral: { variant: 'neutral', label: 'Neutral' },
   };
-  const { variant, label } = map[sentiment];
+  const normalized = (sentiment || 'neutral').toLowerCase();
+  const { variant, label } = map[normalized] || { variant: 'neutral', label: sentiment || 'Neutral' };
   return <Badge variant={variant}>{label}</Badge>;
 }
 
-export function StatusBadge({ status }: { status: FeedbackStatus }) {
-  const map: Record<FeedbackStatus, { variant: 'default' | 'info' | 'warning' | 'success' | 'ai'; label: string }> = {
+export function StatusBadge({ status }: { status?: FeedbackStatus | string }) {
+  const map: Record<string, { variant: 'default' | 'info' | 'warning' | 'success' | 'ai'; label: string }> = {
+    submitted: { variant: 'default', label: 'Submitted' },
+    new: { variant: 'default', label: 'New' },
     received: { variant: 'default', label: 'Received' },
     under_review: { variant: 'info', label: 'Under Review' },
     action_planned: { variant: 'ai', label: 'Action Planned' },
     in_progress: { variant: 'warning', label: 'In Progress' },
+    action_taken: { variant: 'ai', label: 'Action Taken' },
     resolved: { variant: 'success', label: 'Resolved' },
+    closed: { variant: 'default', label: 'Closed' },
+    escalated: { variant: 'warning', label: 'Escalated' },
   };
-  const { variant, label } = map[status];
+  const normalized = (status || '').toLowerCase();
+  const config = map[normalized] || {
+    variant: 'default',
+    label: (status || 'Received').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+  };
+  const { variant, label } = config;
   return <Badge variant={variant}>{label}</Badge>;
 }
 
 export function Button({ children, onClick, variant = 'primary', size = 'md', className = '', type = 'button', disabled = false }: { children: ReactNode; onClick?: () => void; variant?: 'primary' | 'secondary' | 'ghost' | 'outline' | 'ai'; size?: 'sm' | 'md' | 'lg'; className?: string; type?: 'button' | 'submit'; disabled?: boolean }) {
   const variants: Record<string, string> = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm',
-    secondary: 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600',
-    ghost: 'hover:bg-slate-100 text-slate-700 dark:hover:bg-slate-700/50 dark:text-slate-300',
-    outline: 'border border-slate-300 hover:bg-slate-50 text-slate-700 dark:border-slate-600 dark:hover:bg-slate-700/50 dark:text-slate-300',
-    ai: 'bg-violet-600 hover:bg-violet-700 text-white shadow-sm',
+    primary: 'bg-gradient-to-r from-cyan-500 via-blue-600 to-violet-600 hover:from-cyan-400 hover:via-blue-500 hover:to-violet-500 text-white shadow-[0_0_20px_rgba(6,182,212,0.25)] border border-cyan-400/30',
+    secondary: 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/[0.08] dark:text-slate-100 dark:hover:bg-white/[0.15] dark:border dark:border-white/10',
+    ghost: 'hover:bg-slate-100 text-slate-700 dark:hover:bg-white/[0.08] dark:text-slate-300 dark:hover:text-white',
+    outline: 'border border-slate-300 hover:bg-slate-50 text-slate-700 dark:border-white/15 dark:hover:bg-white/[0.08] dark:text-slate-200 dark:hover:border-white/30',
+    ai: 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)] border border-violet-400/30',
   };
   const sizes: Record<string, string> = {
     sm: 'px-3 py-1.5 text-sm',

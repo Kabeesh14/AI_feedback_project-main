@@ -1,4 +1,4 @@
-import { getAllAlerts } from '@/services/alertService';
+import { getAllAlerts, markAllRead } from '@/services/alertService';
 import { AlertTriangle, CheckCircle, Info, AlertCircle, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -33,44 +33,72 @@ export function NotificationDropdown({ onClose }: { onClose: () => void }) {
   return (
     <>
       <div className="fixed inset-0 z-30" onClick={onClose} />
-      <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden z-40 animate-in fade-in slide-in-from-top-2 duration-200">
-        <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+      <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white dark:bg-[#0c0d18]/95 backdrop-blur-2xl rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.8)] border border-slate-200 dark:border-white/10 overflow-hidden z-40 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="px-4 py-3 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bell size={16} className="text-slate-500 dark:text-slate-400" />
             <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Notifications</h3>
             <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">{alerts.filter(a => !a.read).length}</span>
           </div>
-          <button className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Mark all read</button>
+          <button onClick={() => markAllRead()} className="text-xs text-blue-600 dark:text-cyan-400 hover:underline">Mark all read</button>
         </div>
         <div className="max-h-96 overflow-y-auto">
-          {alerts.map(alert => {
-            const Icon = icons[alert.severity];
-            return (
-              <button
-                key={alert.id}
-                onClick={() => { navigate(`/${user?.role}/alerts`); onClose(); }}
-                className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors text-left border-b border-slate-100 dark:border-slate-700/50 last:border-0"
-              >
-                <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${colors[alert.severity]}`}>
-                  <Icon size={16} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{alert.issue}</p>
-                    {!alert.read && <span className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />}
+          {alerts.length === 0 ? (
+            <div className="p-8 text-center text-sm text-slate-400">
+              No notifications to display
+            </div>
+          ) : (
+            alerts.map(alert => {
+              const Icon = icons[alert.severity] || icons.info;
+              return (
+                <button
+                  key={alert.id}
+                  onClick={() => {
+                    if (user?.role === 'hod' || user?.role === 'management') {
+                      navigate(`/${user.role}/issues`);
+                    } else if (user?.role === 'bus_incharge' || user?.role === 'transport_incharge') {
+                      navigate('/bus/issues');
+                    } else if (user?.role === 'hostel_warden') {
+                      navigate('/hostel/issues');
+                    } else if (user?.role) {
+                      navigate(`/${user.role}/notifications`);
+                    }
+                    onClose();
+                  }}
+                  className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/[0.06] transition-colors text-left border-b border-slate-100 dark:border-white/10 last:border-0"
+                >
+                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${colors[alert.severity] || colors.info}`}>
+                    <Icon size={16} />
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{alert.reason}</p>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">{timeAgo(alert.timestamp)}</p>
-                </div>
-              </button>
-            );
-          })}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{alert.issue}</p>
+                      {!alert.read && <span className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{alert.reason}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">{timeAgo(alert.timestamp)}</p>
+                  </div>
+                </button>
+              );
+            })
+          )}
         </div>
         <button
-          onClick={() => { navigate(`/${user?.role}/alerts`); onClose(); }}
-          className="w-full px-4 py-2.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-t border-slate-200 dark:border-slate-700"
+          onClick={() => {
+            if (user?.role === 'hod' || user?.role === 'management') {
+              navigate(`/${user.role}/issues`);
+            } else if (user?.role === 'bus_incharge' || user?.role === 'transport_incharge') {
+              navigate('/bus/issues');
+            } else if (user?.role === 'hostel_warden') {
+              navigate('/hostel/issues');
+            } else if (user?.role) {
+              navigate(`/${user.role}/notifications`);
+            }
+            onClose();
+          }}
+          className="w-full px-4 py-2.5 text-sm text-blue-600 dark:text-cyan-400 hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors border-t border-slate-200 dark:border-white/10 font-medium"
         >
-          View All Alerts
+          {user?.role === 'hod' || user?.role === 'management' || user?.role === 'bus_incharge' || user?.role === 'transport_incharge' || user?.role === 'hostel_warden' ? 'View All Issues & Alerts' : 'View All Notifications'}
         </button>
       </div>
     </>

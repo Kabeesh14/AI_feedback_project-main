@@ -83,7 +83,7 @@ export function analyzeFeedback(text: string): AIAnalysis {
     issue,
     severity,
     possibleCauses,
-    evidenceCount: Math.floor(Math.random() * 30) + 5,
+    evidenceCount: 0,
   };
 }
 
@@ -99,32 +99,13 @@ export function generateDailySummary(department?: string | null): {
   criticalAlerts: number;
   topConcerns: { issue: string; percent: number }[];
 } {
-  const isAll = !department || department === 'ALL' || department === 'all' || department === 'All Departments';
-  if (!isAll) {
-    return {
-      totalResponses: 100,
-      positivePercent: 81,
-      negativePercent: 11,
-      newIssues: 5,
-      criticalAlerts: 2,
-      topConcerns: [
-        { issue: 'Laboratory Wi-Fi', percent: 22 },
-        { issue: 'Slow Laboratory Computers', percent: 16 },
-        { issue: 'Hostel Water Supply', percent: 12 },
-      ],
-    };
-  }
   return {
-    totalResponses: 900,
-    positivePercent: 78,
-    negativePercent: 12,
-    newIssues: 45,
-    criticalAlerts: 18,
-    topConcerns: [
-      { issue: 'Laboratory Wi-Fi', percent: 18 },
-      { issue: 'Slow Laboratory Computers', percent: 14 },
-      { issue: 'Hostel Water Supply', percent: 12 },
-    ],
+    totalResponses: 0,
+    positivePercent: 0,
+    negativePercent: 0,
+    newIssues: 0,
+    criticalAlerts: 0,
+    topConcerns: [],
   };
 }
 
@@ -144,124 +125,105 @@ export function answerAnalyticsQuestion(question: string, department?: string | 
   metrics: { label: string; value: string }[];
   relatedIssue?: string;
 } {
-  const l = lower(question);
-  const deptLabel = department && department !== 'ALL' ? `${department}` : 'Institutional';
-
-  if (l.includes('biggest') || l.includes('top') || l.includes('concern') || l.includes('problem')) {
-    return {
-      answer: `${deptLabel} analysis shows three issues receiving the highest attention:\n\n1. Wi-Fi connectivity — 22% of negative responses\n2. Laboratory systems — 16%\n3. Hostel water supply — 12%\n\nComplaints increased during peak morning and lab hours.`,
-      metrics: [
-        { label: 'Wi-Fi negative share', value: '22%' },
-        { label: 'Lab systems share', value: '16%' },
-        { label: 'Water supply share', value: '12%' },
-        { label: 'Weekly increase', value: '+24%' },
-      ],
-      relatedIssue: 'Laboratory Wi-Fi',
-    };
-  }
-  if (l.includes('department') && (l.includes('negative') || l.includes('worst') || l.includes('highest'))) {
-    return {
-      answer: 'Mechanical Engineering currently has the highest negative feedback rate at 22%, followed by Electronics & Communication Engineering at 18%. Artificial Intelligence & Data Science has improved to 10% after recent corrective actions.',
-      metrics: [
-        { label: 'Mech Eng negative', value: '22%' },
-        { label: 'ECE negative', value: '18%' },
-        { label: 'AI & DS negative', value: '10%' },
-      ],
-      relatedIssue: 'Slow Laboratory Computers',
-    };
-  }
-  if (l.includes('laborator') || l.includes('lab')) {
-    return {
-      answer: 'Laboratory complaints are primarily about two issues:\n\n1. Wi-Fi connectivity (37 mentions, 82% negative)\n2. Slow computers (29 mentions, 68% negative)\n\nPossible contributing factors include network congestion, outdated hardware, and peak-time usage patterns.',
-      metrics: [
-        { label: 'Wi-Fi mentions', value: '37' },
-        { label: 'Wi-Fi negative', value: '82%' },
-        { label: 'Computer mentions', value: '29' },
-      ],
-      relatedIssue: 'Laboratory Wi-Fi',
-    };
-  }
-  if (l.includes('increase') || l.includes('grew') || l.includes('most this week')) {
-    return {
-      answer: 'Wi-Fi complaints increased the most this week — up 240% compared to last week. Hostel water complaints also grew significantly at 180%.',
-      metrics: [
-        { label: 'Wi-Fi increase', value: '+240%' },
-        { label: 'Hostel water increase', value: '+180%' },
-        { label: 'Placement increase', value: '+45%' },
-      ],
-      relatedIssue: 'Laboratory Wi-Fi',
-    };
-  }
-  if (l.includes('overdue')) {
-    return {
-      answer: 'There is 1 overdue action: "Install additional water storage tanks" for Hostel Water Supply, which was due on August 25. 4 actions are in progress and 2 are completed.',
-      metrics: [
-        { label: 'Overdue', value: '1' },
-        { label: 'In Progress', value: '4' },
-        { label: 'Completed', value: '2' },
-      ],
-      relatedIssue: 'Hostel Water Supply',
-    };
-  }
-  if (l.includes('improve') || l.includes('better') || l.includes('work')) {
-    return {
-      answer: 'Two actions show clear improvement:\n\n1. Canteen vendor change — negative feedback dropped from 65% to 27% (+38 points improvement)\n2. Library seating expansion — negative feedback dropped from 58% to 15% (+43 points improvement)\n\nLaboratory system upgrades are in progress with early signs of improvement.',
-      metrics: [
-        { label: 'Canteen improvement', value: '+38 pts' },
-        { label: 'Library improvement', value: '+43 pts' },
-      ],
-      relatedIssue: 'Canteen Food Quality',
-    };
-  }
+  const deptLabel = department && department !== 'ALL' && department !== 'all' ? department : 'institutional';
   return {
-    answer: 'Based on current data, the top institutional priorities are:\n\n1. Laboratory Wi-Fi (critical, 82% negative)\n2. Hostel Water Supply (critical, recurring)\n3. Placement Training (high, rising trend)\n\nWould you like details on any specific area?',
-    metrics: [
-      { label: 'Critical issues', value: '2' },
-      { label: 'High priority', value: '3' },
-      { label: 'Actions in progress', value: '4' },
-    ],
+    answer: `Live conversational analytics are unavailable for this query.\n\nTo view verified real-time ${deptLabel} metrics, sentiment breakdown, and active issues, please consult the live Dashboard, Theme Explorer, or Issue Explorer.`,
+    metrics: [],
   };
 }
 
 export function getAIExplanation(insightType: string): AIExplanation {
   const explanations: Record<string, AIExplanation> = {
     priority: {
-      title: 'Why This Issue Is High Priority',
+      title: 'Why Issues Are Prioritized',
       reasons: [
-        '37 related feedback responses in the last 7 days',
-        '82% negative sentiment among related responses',
-        '5 consecutive days of complaints',
-        '24% increase from previous week',
-        'Affects students across all 4 years',
+        'Identified from aggregated feedback volume across recent academic periods',
+        'Evaluated by the proportion of negative student and faculty sentiment',
+        'Ranked according to recurring complaint frequency and severity indicators',
+        'Monitored across departmental cohorts for systemic impact',
       ],
     },
     theme: {
       title: 'Why This Theme Is Flagged',
       reasons: [
-        'Feedback volume is above the 7-day average',
-        'Negative sentiment trend is increasing',
-        'Multiple related issues detected by clustering',
-        'Recurring patterns identified across departments',
+        'Categorized by thematic grouping of submitted feedback records',
+        'Sentiment trends calculated from student ratings and comments',
+        'Cross-departmental patterns monitored for emerging shifts',
+        'Multiple related issues grouped under common functional area',
       ],
     },
     cause: {
-      title: 'Why This Factor Was Identified',
+      title: 'Why Contributing Factors Are Identified',
       reasons: [
-        '23 feedback responses mention related keywords',
-        'Keyword co-occurrence analysis shows strong correlation',
-        'Temporal patterns align with peak usage times',
-        'Evidence strength rated as moderate based on response volume',
+        'Extracted from co-occurring keywords across student submissions',
+        'Correlated with facility usage and schedule time intervals',
+        'Evidence confidence calibrated against verified response volume in database',
+        'Categorized as investigatory hypotheses based on student reports',
       ],
     },
     alert: {
-      title: 'Why This Alert Was Triggered',
+      title: 'Why Alerts Are Generated',
       reasons: [
-        'Complaint volume exceeded the anomaly threshold',
-        'Rate of change is statistically significant',
-        'Pattern matches known emerging issue signatures',
-        'Severity escalated based on sentiment analysis',
+        'Triggered when negative feedback volume exceeds statistical baseline',
+        'Accelerating issue frequency flagged for proactive review',
+        'Severity assigned based on sentiment intensity and recurrence',
+        'Pattern evaluated against departmental historical averages',
       ],
     },
   };
   return explanations[insightType] || explanations.priority;
+}
+
+import { apiClient } from './apiClient';
+
+/**
+ * Fetch feedback AI analysis from backend API
+ */
+export async function fetchFeedbackAIAnalysis(feedbackId: string | number) {
+  try {
+    const res = await apiClient.get(`/ai/feedback/${feedbackId}`);
+    return res.data;
+  } catch (err) {
+    console.error(`[aiService.fetchFeedbackAIAnalysis ${feedbackId} failed]:`, err);
+    throw err;
+  }
+}
+
+/**
+ * Fetch issue intelligence from backend API
+ */
+export async function fetchIssueIntelligence(issueId: string | number) {
+  try {
+    const res = await apiClient.get(`/ai/issues/${issueId}`);
+    return res.data;
+  } catch (err) {
+    console.error(`[aiService.fetchIssueIntelligence ${issueId} failed]:`, err);
+    throw err;
+  }
+}
+
+/**
+ * Fetch issue root causes with evidence from backend API
+ */
+export async function fetchIssueRootCauses(issueId: string | number) {
+  try {
+    const res = await apiClient.get(`/ai/root-causes/${issueId}`);
+    return res.data;
+  } catch (err) {
+    console.error(`[aiService.fetchIssueRootCauses ${issueId} failed]:`, err);
+    throw err;
+  }
+}
+
+/**
+ * Fetch explainability for an issue from backend API
+ */
+export async function fetchExplainability(issueId: string | number) {
+  try {
+    const res = await apiClient.get(`/ai/explain/${issueId}`);
+    return res.data;
+  } catch (err) {
+    console.error(`[aiService.fetchExplainability ${issueId} failed]:`, err);
+    throw err;
+  }
 }

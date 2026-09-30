@@ -1,9 +1,22 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { GraduationCap, UserCog, Building2, ArrowRight, Sparkles, CheckCircle2, ShieldCheck, Sun, Moon } from 'lucide-react';
+import {
+  GraduationCap,
+  UserCog,
+  Building2,
+  ArrowRight,
+  ArrowLeft,
+  Sparkles,
+  CheckCircle2,
+  ShieldCheck,
+  Sun,
+  Moon,
+  Bus,
+  Home,
+} from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import landingClassroom from '@/assets/landing-classroom.jpg';
-import type { Role } from '@/types';
+import type { Role, PortalType } from '@/types';
 
 interface RoleOption {
   id: Role;
@@ -12,12 +25,12 @@ interface RoleOption {
   emoji: string;
   description: string;
   ctaText: string;
-  icon: typeof GraduationCap;
+  icon: React.ElementType;
   gradient: string;
   features: string[];
 }
 
-const roleOptions: RoleOption[] = [
+const educationRoleOptions: RoleOption[] = [
   {
     id: 'student',
     title: 'STUDENT',
@@ -30,12 +43,23 @@ const roleOptions: RoleOption[] = [
     features: ['Submit structured & anonymous feedback', 'Interactive AI Feedback Assistant', 'Real-time status tracking timeline'],
   },
   {
+    id: 'faculty',
+    title: 'FACULTY',
+    badge: 'Faculty Intelligence',
+    emoji: '👩‍🏫',
+    description: 'Review departmental teaching feedback, view student sentiment trends, and access AI-powered curriculum and issue insights.',
+    ctaText: 'Continue as Faculty',
+    icon: Sparkles,
+    gradient: 'from-teal-500 to-emerald-500',
+    features: ['Department teaching & course insights', 'Student sentiment & feedback trends', 'Faculty Issue Intelligence & Analytics'],
+  },
+  {
     id: 'hod',
-    title: 'FACULTY / HOD',
-    badge: 'Department Intelligence',
+    title: 'HOD',
+    badge: 'Department Command',
     emoji: '👨‍🏫',
     description: 'Monitor department feedback in real-time, explore AI-detected themes and root causes, and manage corrective actions.',
-    ctaText: 'Continue as Faculty / HOD',
+    ctaText: 'Continue as HOD',
     icon: UserCog,
     gradient: 'from-emerald-500 to-teal-500',
     features: ['Live feedback stream & AI Institutional Pulse', 'Root-cause explorer with evidence panel', 'Action center & impact measurement'],
@@ -53,16 +77,137 @@ const roleOptions: RoleOption[] = [
   },
 ];
 
-export function RoleSelectionPage() {
+const busRoleOptions: RoleOption[] = [
+  {
+    id: 'student',
+    title: 'Student',
+    badge: 'Bus Student',
+    emoji: '👨‍🎓',
+    description: 'Submit bus feedback, report issues and track resolutions.',
+    ctaText: 'Continue as Student',
+    icon: GraduationCap,
+    gradient: 'from-blue-500 to-cyan-500',
+    features: ['Submit bus ride & route feedback', 'Report bus maintenance or driving issues', 'Track issue resolution status'],
+  },
+  {
+    id: 'bus_incharge',
+    title: 'Bus Incharge',
+    badge: 'Assigned Bus Scope',
+    emoji: '🚌',
+    description: 'Manage feedback, issues and actions for your assigned bus.',
+    ctaText: 'Continue as Bus Incharge',
+    icon: Bus,
+    gradient: 'from-amber-500 to-orange-500',
+    features: ['Assigned bus feedback & sentiment', 'Bus issues & action tracking', 'Route & passenger notifications'],
+  },
+  {
+    id: 'transport_incharge',
+    title: 'Transport Incharge',
+    badge: 'Transport Operations',
+    emoji: '🚍',
+    description: 'Monitor transport operations, bus feedback and analytics.',
+    ctaText: 'Continue as Transport Incharge',
+    icon: Bus,
+    gradient: 'from-orange-500 to-amber-600',
+    features: ['Transport-wide analytics', 'Multi-bus comparison & issue tracking', 'Transport action center & operations management'],
+  },
+  {
+    id: 'management',
+    title: 'Management',
+    badge: 'Institutional Oversight',
+    emoji: '👨‍💼',
+    description: 'View transport performance, analytics and institutional oversight.',
+    ctaText: 'Continue as Management',
+    icon: Building2,
+    gradient: 'from-violet-500 to-purple-500',
+    features: ['Executive transport oversight', 'Transport satisfaction & safety trends', 'Multi-portal institutional analytics'],
+  },
+];
+
+const hostelRoleOptions: RoleOption[] = [
+  {
+    id: 'student',
+    title: 'Student',
+    badge: 'Hostel Resident',
+    emoji: '👨‍🎓',
+    description: 'Submit hostel feedback, report maintenance issues and track resolutions.',
+    ctaText: 'Continue as Student',
+    icon: GraduationCap,
+    gradient: 'from-blue-500 to-cyan-500',
+    features: ['Submit room & mess feedback', 'Report maintenance, water & Wi-Fi issues', 'Track resolution status & warden actions'],
+  },
+  {
+    id: 'hostel_warden',
+    title: 'Hostel Warden',
+    badge: 'Assigned Floor Scope',
+    emoji: '🏠',
+    description: 'Manage feedback, maintenance issues and actions for your assigned floor.',
+    ctaText: 'Continue as Hostel Warden',
+    icon: Home,
+    gradient: 'from-emerald-500 to-teal-500',
+    features: ['Assigned floor feedback & ratings', 'Hostel maintenance tickets & actions', 'Floor announcements & student notifications'],
+  },
+  {
+    id: 'management',
+    title: 'Management',
+    badge: 'Institutional Oversight',
+    emoji: '👨‍💼',
+    description: 'View hostel performance, analytics and institutional oversight.',
+    ctaText: 'Continue as Management',
+    icon: Building2,
+    gradient: 'from-violet-500 to-purple-500',
+    features: ['Executive hostel & mess oversight', 'Floor-by-floor satisfaction trends', 'Multi-portal institutional analytics'],
+  },
+];
+
+interface RoleSelectionPageProps {
+  forcedPortal?: PortalType;
+}
+
+export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
   const [searchParams] = useSearchParams();
-  const initialRole = (searchParams.get('selected') as Role) || 'student';
+  const rawPortal = forcedPortal || (searchParams.get('portal') as PortalType) || 'education';
+  const currentPortal: PortalType = ['education', 'bus', 'hostel'].includes(rawPortal) ? rawPortal : 'education';
+
+  const roleOptions = useMemo(() => {
+    if (currentPortal === 'bus') return busRoleOptions;
+    if (currentPortal === 'hostel') return hostelRoleOptions;
+    return educationRoleOptions;
+  }, [currentPortal]);
+
+  const initialRole = (searchParams.get('selected') as Role) || roleOptions[0].id;
   const [selectedRole, setSelectedRole] = useState<Role>(initialRole);
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleContinue = (role: Role) => {
-    navigate(`/login?role=${role}`);
+    navigate(`/login?portal=${currentPortal}&role=${role}`);
   };
+
+  const portalMeta = useMemo(() => {
+    if (currentPortal === 'bus') {
+      return {
+        badge: 'Bus Portal Roles',
+        title: 'Bus Portal',
+        subtitle: 'Select your role to continue.',
+        color: 'from-amber-400 to-orange-300',
+      };
+    }
+    if (currentPortal === 'hostel') {
+      return {
+        badge: 'Hostel Portal Roles',
+        title: 'Hostel Portal',
+        subtitle: 'Select your role to continue.',
+        color: 'from-emerald-400 to-teal-300',
+      };
+    }
+    return {
+      badge: 'Interactive Role Selection',
+      title: 'Welcome to FeedbackIQ',
+      subtitle: 'Select your role to continue. Experience how FeedbackIQ delivers tailored insights for students, faculty, HODs, and college management.',
+      color: 'from-blue-400 to-violet-300',
+    };
+  }, [currentPortal]);
 
   return (
     <div className="relative min-h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col justify-between overflow-x-hidden">
@@ -87,11 +232,20 @@ export function RoleSelectionPage() {
             </div>
             <div>
               <h1 className="text-base font-bold text-white leading-none">FEEDBACKIQ</h1>
-              <p className="text-[10px] font-semibold text-slate-300 uppercase tracking-widest mt-0.5">Institutional Intelligence</p>
+              <p className="text-[10px] font-semibold text-slate-300 uppercase tracking-widest mt-0.5">
+                {currentPortal.toUpperCase()} PORTAL
+              </p>
             </div>
           </Link>
 
           <div className="flex items-center gap-3">
+            <Link
+              to="/portal-selection"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-200 transition-all backdrop-blur-md"
+            >
+              <ArrowLeft size={14} />
+              <span>Back to Portal Selection</span>
+            </Link>
             <button
               onClick={toggleTheme}
               className="p-2 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 text-white transition-colors backdrop-blur-md"
@@ -100,7 +254,7 @@ export function RoleSelectionPage() {
               {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
             </button>
             <Link
-              to="/login"
+              to={`/login?portal=${currentPortal}`}
               className="text-xs font-semibold text-white hover:text-blue-300 px-3 py-2 rounded-lg transition-colors"
             >
               Direct Login
@@ -109,25 +263,29 @@ export function RoleSelectionPage() {
         </header>
 
         {/* Main Content */}
-        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-12 flex-1 flex flex-col justify-center w-full">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex-1 flex flex-col justify-center w-full">
           
           {/* Title Banner */}
           <div className="text-center max-w-2xl mx-auto mb-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-300 text-xs font-semibold mb-4 backdrop-blur-md">
               <span className="h-2 w-2 rounded-full bg-blue-400 animate-pulse" />
-              Interactive Role Selection
+              {portalMeta.badge}
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-3">
-              Welcome to <span className="bg-gradient-to-r from-blue-400 to-violet-300 bg-clip-text text-transparent">FeedbackIQ</span>
+              {currentPortal === 'education' ? (
+                <>Welcome to <span className={`bg-gradient-to-r ${portalMeta.color} bg-clip-text text-transparent`}>FeedbackIQ</span></>
+              ) : (
+                <span className={`bg-gradient-to-r ${portalMeta.color} bg-clip-text text-transparent`}>{portalMeta.title}</span>
+              )}
             </h1>
             <p className="text-base text-slate-300 leading-relaxed">
-              Select your role to continue. Experience how FeedbackIQ delivers tailored insights for students, faculty, HODs, and college management.
+              {portalMeta.subtitle}
             </p>
           </div>
 
-          {/* 3 Interactive Role Cards with Glassmorphism */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 mb-10">
-            {roleOptions.map(option => {
+          {/* Interactive Role Cards with Glassmorphism */}
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${roleOptions.length === 3 ? 'lg:grid-cols-3 max-w-5xl' : 'lg:grid-cols-4'} gap-6 mb-10 mx-auto w-full`}>
+            {roleOptions.map((option) => {
               const isSelected = selectedRole === option.id;
               const Icon = option.icon;
 
@@ -153,7 +311,7 @@ export function RoleSelectionPage() {
                     {/* Icon Header */}
                     <div className="flex items-center gap-3 mb-5">
                       <div
-                        className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${option.gradient} flex items-center justify-center shadow-lg text-white transition-transform duration-300 group-hover:scale-110`}
+                        className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${option.gradient} flex items-center justify-center shadow-lg text-white transition-transform duration-300 group-hover:scale-110 flex-shrink-0`}
                       >
                         <Icon size={26} />
                       </div>
@@ -183,7 +341,7 @@ export function RoleSelectionPage() {
                   {/* Continue Button */}
                   <button
                     type="button"
-                    onClick={e => {
+                    onClick={(e) => {
                       e.stopPropagation();
                       handleContinue(option.id);
                     }}
@@ -201,12 +359,15 @@ export function RoleSelectionPage() {
             })}
           </div>
 
-          {/* Footer info banner */}
+          {/* Quick Action Navigation Bar */}
           <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-white/15 p-4 text-center text-xs text-slate-300 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 max-w-4xl mx-auto w-full">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              <span>Interactive Demo Environment — No setup or registration required</span>
-            </div>
+            <Link
+              to="/portal-selection"
+              className="text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors font-medium"
+            >
+              <ArrowLeft size={14} />
+              <span>← Back to Portal Selection</span>
+            </Link>
             <button
               onClick={() => handleContinue(selectedRole)}
               className="text-blue-400 font-bold hover:underline flex items-center gap-1"

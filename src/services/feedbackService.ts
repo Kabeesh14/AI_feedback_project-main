@@ -1,5 +1,5 @@
-import type { Feedback, FeedbackStatus, Category, Department, Sentiment, Severity } from '@/types';
-import { generateFeedback } from './mockData';
+import type { Feedback, FeedbackStatus, Category, Sentiment } from '@/types';
+import { apiClient } from './apiClient';
 
 type FeedbackListener = (feedback: Feedback[]) => void;
 const listeners: Set<FeedbackListener> = new Set();
@@ -15,10 +15,166 @@ function notifyListeners() {
   listeners.forEach(l => l([...feedbackStore]));
 }
 
-let feedbackStore: Feedback[] = generateFeedback(900);
+// In-memory cache populated from real backend API fetch
+let feedbackStore: Feedback[] = [];
 
 function isAllDept(dept?: string | null): boolean {
   return !dept || dept === 'ALL' || dept === 'all' || dept === 'All Departments';
+}
+
+function mapApiRecordToFeedback(item: any): Feedback {
+  return {
+    id: String(item.id),
+    date: item.date || item.createdAt || new Date().toISOString(),
+    department: item.department,
+    portal: item.portal || 'education',
+    bus_number: item.bus_number || item.busNumber || undefined,
+    floor: item.floor || undefined,
+    year: item.year || item.academicYear || undefined,
+    category: item.category as Category,
+    comment: item.comment || item.feedbackText || '',
+    sentiment: (item.sentiment?.toLowerCase() || 'neutral') as Sentiment,
+    theme: item.theme || 'General Feedback',
+    issue: item.issue || item.theme || 'General Feedback',
+    severity: (item.severity || item.priority || 'medium').toLowerCase(),
+    status: (item.status?.toLowerCase() || 'received') as FeedbackStatus,
+    anonymous: Boolean(item.anonymous || item.isAnonymous),
+    studentId: item.studentId || (item.userId ? `STU-${item.userId}` : 'ANONYMOUS'),
+    submitterRole: item.submitterRole || item.submitter_role || (item.userRole?.toLowerCase()) || (item.role?.toLowerCase()) || 'student',
+    imageUrl: item.imageUrl || item.image_url || undefined,
+    image_url: item.imageUrl || item.image_url || undefined,
+  };
+}
+
+/**
+ * Fetch feedback list from real backend API with role and department isolation
+ */
+export async function fetchFeedback(filters: {
+  department?: string | null;
+  portal?: string | null;
+  bus_number?: string | null;
+  floor?: string | null;
+  category?: string | null;
+  sentiment?: string | null;
+  status?: string | null;
+  search?: string | null;
+  source?: 'student' | 'faculty' | 'all' | string | null;
+  page?: number;
+  limit?: number;
+} = {}): Promise<Feedback[]> {
+  try {
+    const params: Record<string, any> = {};
+    if (filters.department && !isAllDept(filters.department)) {
+      params.department = filters.department;
+    }
+    if (filters.portal) params.portal = filters.portal;
+    if (filters.bus_number) params.bus_number = filters.bus_number;
+    if (filters.floor) params.floor = filters.floor;
+    if (filters.category) params.category = filters.category;
+    if (filters.sentiment) params.sentiment = filters.sentiment;
+    if (filters.status) params.status = filters.status;
+    if (filters.search) params.search = filters.search;
+    if (filters.source && filters.source !== 'all') params.source = filters.source;
+    if (filters.page) params.page = filters.page;
+    if (filters.limit) params.limit = filters.limit;
+
+    const res = await apiClient.get('/feedback', { params });
+    if (res.success && Array.isArray(res.data)) {
+      const mapped = res.data.map(mapApiRecordToFeedback);
+      // Merge with or replace store
+      feedbackStore = mapped;
+      notifyListeners();
+      return mapped;
+    }
+    return [];
+  } catch (err) {
+    console.error('[feedbackService.fetchFeedback failed]:', err);
+    throw err;
+  }
+}
+
+/**
+ * Fetch student's own feedback history from real backend API
+ */
+export async function fetchMyFeedback(): Promise<Feedback[]> {
+  try {
+    const res = await apiClient.get('/feedback/my', { params: { limit: 100 } });
+    if (res.success && Array.isArray(res.data)) {
+      const mapped = res.data.map(mapApiRecordToFeedback);
+      return mapped;
+    }
+    return [];
+  } catch (err) {
+    console.error('[feedbackService.fetchMyFeedback failed]:', err);
+    throw err;
+  }
+}
+
+/**
+ * Fetch single feedback by ID from real backend API
+ */
+export async function fetchFeedbackById(id: string): Promise<Feedback | null> {
+  try {
+    const res = await apiClient.get(`/feedback/${id}`);
+    if (res.success && res.data) {
+      return mapApiRecordToFeedback(res.data);
+    }
+    return null;
+  } catch (err) {
+    console.error(`[feedbackService.fetchFeedbackById ${id} failed]:`, err);
+    throw err;
+  }
+}
+
+/**
+ * Create feedback in real backend MySQL database
+ */
+export async function addFeedback(feedback: Omit<Feedback, 'id'> & { rating?: number }): Promise<Feedback> {
+  // Determine rating if not explicitly supplied
+  let rating = feedback.rating;
+  if (!rating) {
+    if (feedback.sentiment === 'positive') rating = 5;
+    else if (feedback.sentiment === 'negative') rating = 1;
+    else rating = 3;
+  }
+
+  const payload: Record<string, any> = {
+    feedbackText: feedback.comment,
+    comment: feedback.comment,
+    rating,
+    category: feedback.category,
+    anonymous: Boolean(feedback.anonymous),
+    department: feedback.department,
+    academicYear: feedback.year || null,
+  };
+  if (feedback.portal) payload.portal = feedback.portal;
+  if (feedback.bus_number) payload.bus_number = feedback.bus_number;
+  if (feedback.floor) payload.floor = feedback.floor;
+  if (feedback.imageUrl || (feedback as any).image_url) {
+    payload.imageUrl = feedback.imageUrl || (feedback as any).image_url;
+  }
+
+  try {
+    const res = await apiClient.post('/feedback', payload);
+    if (res.success && res.data) {
+      const created = mapApiRecordToFeedback(res.data);
+      feedbackStore = [created, ...feedbackStore];
+      notifyListeners();
+      return created;
+    }
+  } catch (err) {
+    console.error('[feedbackService.addFeedback API failed]:', err);
+    throw err;
+  }
+
+  // Fallback local creation if API response structure was unexpected
+  const localFallback: Feedback = {
+    ...feedback,
+    id: `fb-${feedbackStore.length + 1}-${Date.now()}`,
+  };
+  feedbackStore = [localFallback, ...feedbackStore];
+  notifyListeners();
+  return localFallback;
 }
 
 export function getAllFeedback(dept?: string | null): Feedback[] {
@@ -75,16 +231,6 @@ export function searchFeedback(query: string): Feedback[] {
     f.theme.toLowerCase().includes(l) ||
     f.department.toLowerCase().includes(l)
   );
-}
-
-export function addFeedback(feedback: Omit<Feedback, 'id'>): Feedback {
-  const newFeedback: Feedback = {
-    ...feedback,
-    id: `fb-${feedbackStore.length + 1}-${Date.now()}`,
-  };
-  feedbackStore = [newFeedback, ...feedbackStore];
-  notifyListeners();
-  return newFeedback;
 }
 
 export function updateFeedbackStatus(id: string, status: FeedbackStatus): void {
@@ -169,9 +315,8 @@ export function getHeatmapData() {
   return days.map(day => {
     const row: Record<string, string | number> = { day };
     categories.forEach(cat => {
-      row[cat] = Math.floor(Math.random() * 20) + 1;
+      row[cat] = 0;
     });
     return row;
   });
 }
-

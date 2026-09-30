@@ -69,7 +69,7 @@ export function LandingPage() {
               </button>
               
               <button
-                onClick={() => navigate('/role-selection')}
+                onClick={() => navigate('/portal-selection')}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30 active:scale-[0.98] transition-all"
               >
                 <span>GET STARTED</span>
@@ -108,14 +108,14 @@ export function LandingPage() {
                 {/* Buttons */}
                 <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-10">
                   <button
-                    onClick={() => navigate('/role-selection')}
+                    onClick={() => navigate('/portal-selection')}
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl shadow-blue-600/40 active:scale-[0.98] transition-all"
                   >
                     <span>Get Started</span>
                     <ArrowRight size={18} />
                   </button>
                   <button
-                    onClick={() => navigate('/role-selection')}
+                    onClick={() => navigate('/portal-selection')}
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-4 rounded-2xl bg-slate-900/70 hover:bg-slate-900 text-white border border-white/20 font-bold text-sm shadow-lg backdrop-blur-md active:scale-[0.98] transition-all"
                   >
                     <Brain size={18} className="text-violet-400" />

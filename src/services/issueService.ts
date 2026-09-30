@@ -1,5 +1,5 @@
-import type { Issue, PossibleCause, FeedbackStatus } from '@/types';
-import { generateIssues } from './mockData';
+import type { Issue, PossibleCause, FeedbackStatus, Category, Severity, Department } from '@/types';
+import { apiClient } from './apiClient';
 
 type IssueListener = (issues: Issue[]) => void;
 const listeners: Set<IssueListener> = new Set();
@@ -15,10 +15,117 @@ function notifyListeners() {
   listeners.forEach(l => l([...issues]));
 }
 
-const issues: Issue[] = generateIssues();
+let issues: Issue[] = [];
+let rootCauses: (PossibleCause & { issueId?: string; issueTitle?: string; department?: string })[] = [];
 
 function isAllDept(dept?: string | null): boolean {
   return !dept || dept === 'ALL' || dept === 'all' || dept === 'All Departments';
+}
+
+function mapBackendIssue(item: any): Issue {
+  const statusMap: Record<string, FeedbackStatus> = {
+    identified: 'received',
+    analyzing: 'under_review',
+    action_planned: 'action_planned',
+    in_progress: 'in_progress',
+    resolved: 'resolved',
+  };
+
+  const complaintCount = item.complaintCount != null ? Number(item.complaintCount) : (item.feedbackCount != null ? Number(item.feedbackCount) : 0);
+  const negativePercent = typeof item.negativePercent === 'number' ? item.negativePercent : 0;
+  const trend = Array.isArray(item.trend) ? item.trend : [];
+
+  return {
+    id: String(item.id),
+    title: item.title || 'Institutional Issue',
+    category: (item.category || 'Other') as Category,
+    portal: item.portal || 'education',
+    bus_number: item.bus_number || item.busNumber || undefined,
+    floor: item.floor || undefined,
+    severity: (item.severity || item.priority || 'medium').toLowerCase() as Severity,
+    complaintCount,
+    negativePercent,
+    trend,
+    affectedYears: Array.isArray(item.affectedYears) ? item.affectedYears : [],
+    affectedLocations: Array.isArray(item.affectedLocations) ? item.affectedLocations : [],
+    department: (item.department || 'ALL') as Department | 'ALL',
+    keywords: Array.isArray(item.keywords) ? item.keywords : [],
+    cluster: Array.isArray(item.cluster) ? item.cluster : [],
+    status: (statusMap[item.status] || item.status || 'received') as FeedbackStatus,
+    priorityScore: item.impactScore != null ? Number(item.impactScore) : (item.priorityScore != null ? Number(item.priorityScore) : null),
+  };
+}
+
+function mapBackendCause(r: any): PossibleCause & { issueId?: string; issueTitle?: string; department?: string } {
+  let confidence: 'low' | 'moderate' | 'high' = 'moderate';
+  if (r.confidence === 'high' || r.confidence === 'moderate' || r.confidence === 'low') {
+    confidence = r.confidence;
+  } else if (typeof r.confidence === 'number') {
+    confidence = r.confidence >= 80 ? 'high' : r.confidence >= 50 ? 'moderate' : 'low';
+  }
+
+  const evidence = Array.isArray(r.evidence)
+    ? r.evidence.filter(Boolean)
+    : r.evidence
+    ? [r.evidence]
+    : [];
+
+  return {
+    id: String(r.id),
+    factor: r.factor || r.cause_text || 'Contributing Factor',
+    relatedFeedbackCount: Number(r.supportingCount ?? r.supporting_count ?? r.relatedFeedbackCount) || 0,
+    supportingKeywords: Array.isArray(r.supportingKeywords) ? r.supportingKeywords : [],
+    evidenceExamples: evidence,
+    confidence,
+    issueId: r.issueId ? String(r.issueId) : undefined,
+    issueTitle: r.issueTitle ? String(r.issueTitle) : undefined,
+    department: r.department ? String(r.department) : undefined,
+  };
+}
+
+/**
+ * Fetch issues from real backend /api/analytics/issues
+ */
+export async function fetchIssues(dept?: string | null, filters: Record<string, any> = {}): Promise<Issue[]> {
+  try {
+    const params: Record<string, any> = { ...filters };
+    if (dept && !isAllDept(dept)) {
+      params.department = dept;
+    }
+    const res = await apiClient.get('/analytics/issues', { params });
+    if (res.success && Array.isArray(res.data?.issues)) {
+      const mapped = res.data.issues.map(mapBackendIssue);
+      issues = mapped;
+      notifyListeners();
+      return mapped;
+    }
+    return getAllIssues(dept);
+  } catch (err) {
+    console.error('[issueService.fetchIssues failed]:', err);
+    throw err;
+  }
+}
+
+/**
+ * Fetch root causes from real backend /api/analytics/root-causes
+ */
+export async function fetchPossibleCauses(dept?: string | null, filters: Record<string, any> = {}): Promise<PossibleCause[]> {
+  try {
+    const params: Record<string, any> = { ...filters };
+    if (dept && !isAllDept(dept)) {
+      params.department = dept;
+    }
+    const res = await apiClient.get('/analytics/root-causes', { params });
+    if (res.success && Array.isArray(res.data?.rootCauses)) {
+      const mapped = res.data.rootCauses.map(mapBackendCause);
+      rootCauses = mapped;
+      return mapped;
+    }
+    return [];
+  } catch (err) {
+    console.error('[issueService.fetchPossibleCauses failed]:', err);
+    throw err;
+  }
 }
 
 export function getAllIssues(dept?: string | null): Issue[] {
@@ -35,7 +142,7 @@ export function updateIssueStatus(idOrTitle: string, status: FeedbackStatus): vo
 }
 
 export function getIssueById(id: string): Issue | undefined {
-  return issues.find(i => i.id === id);
+  return issues.find(i => String(i.id) === String(id));
 }
 
 export function getIssuesBySeverity(severity: Issue['severity'], dept?: string | null): Issue[] {
@@ -55,172 +162,14 @@ export function searchIssues(query: string, dept?: string | null): Issue[] {
   return getAllIssues(dept).filter(i =>
     i.title.toLowerCase().includes(l) ||
     i.category.toLowerCase().includes(l) ||
-    i.keywords.some(k => k.toLowerCase().includes(l))
+    (Array.isArray(i.keywords) && i.keywords.some(k => k.toLowerCase().includes(l)))
   );
 }
 
-const causeEvidence: Record<string, PossibleCause[]> = {
-  'Laboratory Wi-Fi': [
-    {
-      id: 'cause-wifi-1',
-      factor: 'Network Congestion',
-      relatedFeedbackCount: 23,
-      supportingKeywords: ['slow', 'disconnect', 'peak time', 'multiple users'],
-      evidenceExamples: [
-        'Internet becomes slow during practical sessions when many students connect.',
-        'Multiple systems accessing online resources simultaneously causes slowdown.',
-        'Wi-Fi disconnects when the lab is at full capacity.',
-      ],
-      confidence: 'moderate',
-    },
-    {
-      id: 'cause-wifi-2',
-      factor: 'Access Point Coverage',
-      relatedFeedbackCount: 15,
-      supportingKeywords: ['signal', 'weak', 'corner', 'dead zone'],
-      evidenceExamples: [
-        'Wi-Fi signal is weak in the corner of the lab.',
-        'Some systems cannot connect at all due to poor signal.',
-        'Dead zones in the laboratory block.',
-      ],
-      confidence: 'moderate',
-    },
-    {
-      id: 'cause-wifi-3',
-      factor: 'Bandwidth Capacity',
-      relatedFeedbackCount: 18,
-      supportingKeywords: ['slow', 'limited', 'throttle', 'capacity'],
-      evidenceExamples: [
-        'Internet speed drops significantly during peak hours.',
-        'Bandwidth seems insufficient for the number of users.',
-        'Streaming and downloads are extremely slow.',
-      ],
-      confidence: 'high',
-    },
-    {
-      id: 'cause-wifi-4',
-      factor: 'Peak-Time Usage',
-      relatedFeedbackCount: 20,
-      supportingKeywords: ['peak', 'practical', 'session', 'time'],
-      evidenceExamples: [
-        'Problems mainly occur during practical session hours.',
-        'Issues are worse between 2 PM and 4 PM when all labs are active.',
-        'Weekday mornings are fine, afternoons are problematic.',
-      ],
-      confidence: 'high',
-    },
-  ],
-  'Slow Laboratory Computers': [
-    {
-      id: 'cause-pc-1',
-      factor: 'Outdated Hardware',
-      relatedFeedbackCount: 19,
-      supportingKeywords: ['outdated', 'old', 'slow', 'hardware'],
-      evidenceExamples: [
-        'Lab PCs are very old and need replacement.',
-        'Systems take several minutes to boot.',
-        'Hardware cannot handle modern development tools.',
-      ],
-      confidence: 'high',
-    },
-    {
-      id: 'cause-pc-2',
-      factor: 'Insufficient RAM',
-      relatedFeedbackCount: 12,
-      supportingKeywords: ['ram', 'memory', 'lag', 'freeze'],
-      evidenceExamples: [
-        'Systems freeze when running IDEs like IntelliJ.',
-        'Not enough memory for running virtual machines.',
-        'Applications crash frequently due to low memory.',
-      ],
-      confidence: 'moderate',
-    },
-    {
-      id: 'cause-pc-3',
-      factor: 'High System Utilization',
-      relatedFeedbackCount: 14,
-      supportingKeywords: ['utilization', 'load', 'shared', 'performance'],
-      evidenceExamples: [
-        'Shared systems are slow when multiple students use them.',
-        'Performance degrades with heavy workloads.',
-        'Systems lag during simultaneous compilation tasks.',
-      ],
-      confidence: 'moderate',
-    },
-    {
-      id: 'cause-pc-4',
-      factor: 'Lack of Maintenance',
-      relatedFeedbackCount: 10,
-      supportingKeywords: ['maintenance', 'dust', 'clean', 'service'],
-      evidenceExamples: [
-        'Systems have not been serviced in a long time.',
-        'Dust buildup affects performance.',
-        'No regular maintenance schedule for lab equipment.',
-      ],
-      confidence: 'low',
-    },
-  ],
-  'Hostel Water Supply': [
-    {
-      id: 'cause-water-1',
-      factor: 'Inadequate Storage Capacity',
-      relatedFeedbackCount: 16,
-      supportingKeywords: ['storage', 'tank', 'capacity', 'shortage'],
-      evidenceExamples: [
-        'Water runs out by 8 AM every morning.',
-        'Storage tanks are too small for the number of residents.',
-        'Water shortage during peak usage hours.',
-      ],
-      confidence: 'high',
-    },
-    {
-      id: 'cause-water-2',
-      factor: 'Pump Timing Issues',
-      relatedFeedbackCount: 11,
-      supportingKeywords: ['pump', 'timing', 'schedule', 'morning'],
-      evidenceExamples: [
-        'Water pump does not start early enough in the morning.',
-        'Pump timing does not align with student schedules.',
-        'Inconsistent pump operation causes shortages.',
-      ],
-      confidence: 'moderate',
-    },
-    {
-      id: 'cause-water-3',
-      factor: 'Pipeline Leaks',
-      relatedFeedbackCount: 7,
-      supportingKeywords: ['leak', 'pipe', 'pressure', 'waste'],
-      evidenceExamples: [
-        'Water pressure is low, possibly due to pipeline leaks.',
-        'Visible leaks in the hostel plumbing system.',
-        'Water wastage reduces available supply.',
-      ],
-      confidence: 'low',
-    },
-    {
-      id: 'cause-water-4',
-      factor: 'Peak Hour Demand',
-      relatedFeedbackCount: 13,
-      supportingKeywords: ['peak', 'morning', 'demand', 'rush'],
-      evidenceExamples: [
-        'Everyone needs water at the same time in the morning.',
-        'Peak demand exceeds supply capacity.',
-        'Morning rush hour creates severe shortages.',
-      ],
-      confidence: 'moderate',
-    },
-  ],
-};
-
-export function getPossibleCauses(issueTitle: string): PossibleCause[] {
-  return causeEvidence[issueTitle] || [
-    {
-      id: 'cause-default-1',
-      factor: 'Insufficient Data',
-      relatedFeedbackCount: 0,
-      supportingKeywords: [],
-      evidenceExamples: ['Not enough feedback data to identify contributing factors.'],
-      confidence: 'low',
-    },
-  ];
+export function getPossibleCauses(issueTitleOrId: string): PossibleCause[] {
+  const norm = issueTitleOrId.toLowerCase().trim();
+  return rootCauses.filter(
+    c => (c.issueTitle && c.issueTitle.toLowerCase().trim() === norm) ||
+         (c.issueId && String(c.issueId) === String(issueTitleOrId))
+  );
 }

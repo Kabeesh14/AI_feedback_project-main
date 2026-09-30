@@ -8,23 +8,14 @@ import type {
   DepartmentMetric,
   CampusArea,
   Department,
+  OFFICIAL_DEPARTMENTS,
   Category,
   Sentiment,
   Severity,
   Year,
 } from '@/types';
 
-const departments: Department[] = [
-  'Information Technology',
-  'Cyber Security',
-  'Computer Science and Business Engineering',
-  'Biotechnology and Biomedical Engineering',
-  'Artificial Intelligence & Data Science',
-  'Computer Science & Engineering',
-  'Electronics & Communication Engineering',
-  'Mechanical Engineering',
-  'Civil Engineering',
-];
+const departments: Department[] = OFFICIAL_DEPARTMENTS;
 const categories: Category[] = [
   'Teaching', 'Laboratory', 'Internet', 'Infrastructure',
   'Hostel', 'Canteen', 'Transport', 'Placement', 'Library', 'Examination',
