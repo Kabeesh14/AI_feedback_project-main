@@ -1,347 +1,600 @@
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Card, Button, Badge, SentimentBadge, SeverityBadge } from '@/components/common/UI';
-import { AIBadge } from '@/components/common/AIExplainer';
-import { addFeedback } from '@/services/feedbackService';
-import { analyzeFeedback } from '@/services/aiService';
-import { Sparkles, ChevronRight, ChevronLeft, Check, Eye, EyeOff, Send } from 'lucide-react';
-import type { Category, Sentiment, Severity } from '@/types';
-
-const categories: { name: Category; icon: string; color: string }[] = [
-  { name: 'Teaching', icon: '📚', color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' },
-  { name: 'Laboratory', icon: '🔬', color: 'bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800' },
-  { name: 'Internet', icon: '📶', color: 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800' },
-  { name: 'Infrastructure', icon: '🏫', color: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800' },
-  { name: 'Hostel', icon: '🏠', color: 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800' },
-  { name: 'Canteen', icon: '🍽️', color: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' },
-  { name: 'Transport', icon: '🚌', color: 'bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800' },
-  { name: 'Placement', icon: '🎯', color: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' },
-  { name: 'Library', icon: '📖', color: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800' },
-  { name: 'Examination', icon: '📝', color: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' },
-];
-
-const emotions = ['Excellent', 'Good', 'Okay', 'Poor', 'Very Poor'];
-const emotionSentiments: Record<string, Sentiment> = {
-  Excellent: 'positive', Good: 'positive', Okay: 'neutral', Poor: 'negative', 'Very Poor': 'negative',
-};
-
-const issueChips: Record<string, string[]> = {
-  'Laboratory': ['Slow Computers', 'Missing Software', 'Network Problems', 'Equipment', 'Technical Assistance', 'Other'],
-  'Internet': ['Slow Speed', 'Frequent Disconnection', 'No Access', 'Peak Hour Issues', 'Weak Signal', 'Other'],
-  'Teaching': ['Pacing', 'Clarity', 'Engagement', 'Materials', 'Assessment', 'Other'],
-  'Hostel': ['Water Supply', 'Cleanliness', 'Maintenance', 'Food', 'Safety', 'Other'],
-  'Canteen': ['Food Quality', 'Hygiene', 'Pricing', 'Variety', 'Service', 'Other'],
-  'Transport': ['Timing', 'Route', 'Bus Condition', 'Crowding', 'Frequency', 'Other'],
-  'Placement': ['Training Quality', 'Mock Interviews', 'Company Visits', 'Aptitude Prep', 'Career Guidance', 'Other'],
-  'Library': ['Seating', 'Book Availability', 'Noise', 'Hours', 'Digital Resources', 'Other'],
-  'Examination': ['Schedule', 'Hall Allocation', 'Question Pattern', 'Evaluation', 'Re-evaluation', 'Other'],
-  'Infrastructure': ['Projector', 'AC/Ventilation', 'Furniture', 'Cleanliness', 'Lighting', 'Other'],
-};
-
-const frequencies = ['Rarely', 'Sometimes', 'Frequently', 'Almost Every Session'];
-
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Card, Button, Badge } from '@/components/common/UI';
+import {
+  fetchStudentForms,
+  fetchFormById,
+  submitFormResponse,
+  type FeedbackForm,
+  type FormQuestion,
+  type FormAnswerSubmission
+} from '@/services/formService';
 import { useAuth } from '@/context/AuthContext';
+import { ImageUpload } from '@/components/common/ImageUpload';
+import {
+  FileText,
+  Star,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  ArrowLeft,
+  Send,
+  Loader2,
+  ShieldCheck,
+  Check,
+  List,
+  Sparkles,
+  ChevronRight,
+  RefreshCw
+} from 'lucide-react';
 
 export function StudentFeedback() {
-  const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
-  const initialState = location.state as { category?: string; emotion?: string } | null;
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const formIdParam = searchParams.get('formId');
 
-  const [step, setStep] = useState(0);
-  const [emotion, setEmotion] = useState(initialState?.emotion || '');
-  const [category, setCategory] = useState<Category | ''>((initialState?.category as Category | undefined) || '');
-  const [issue, setIssue] = useState('');
-  const [frequency, setFrequency] = useState('');
-  const [details, setDetails] = useState('');
-  const [anonymous, setAnonymous] = useState(true);
-  const [submitted, setSubmitted] = useState(false);
-  const [aiAnalysis, setAiAnalysis] = useState<ReturnType<typeof analyzeFeedback> | null>(null);
+  const [forms, setForms] = useState<FeedbackForm[]>([]);
+  const [loadingForms, setLoadingForms] = useState<boolean>(true);
+  const [selectedForm, setSelectedForm] = useState<FeedbackForm | null>(null);
+  const [loadingFormDetail, setLoadingFormDetail] = useState<boolean>(false);
 
-  const steps = ['Emotion', 'Category', 'Issue', 'Frequency', 'Details', 'Review'];
+  // Form answer state: mapping of question_id -> { rating_value, selected_option, text_response }
+  const [answers, setAnswers] = useState<Record<number, {
+    rating_value?: number;
+    selected_option?: string;
+    text_response?: string;
+  }>>({});
 
-  const handleSubmit = () => {
-    const comment = `${emotion} experience with ${category}. Issue: ${issue}. Frequency: ${frequency}. ${details}`.trim();
-    const analysis = analyzeFeedback(comment);
-    setAiAnalysis(analysis);
-    const studentDept = user?.department || 'Artificial Intelligence & Data Science';
-    addFeedback({
-      date: new Date().toISOString(),
-      department: studentDept,
-      year: '3rd Year',
-      category: category as Category,
-      comment,
-      sentiment: emotionSentiments[emotion] || 'neutral',
-      theme: analysis.theme,
-      issue: analysis.issue,
-      severity: analysis.severity,
-      status: 'received',
-      anonymous,
-      studentId: anonymous ? 'ANONYMOUS' : 'STU-1001',
-    });
-    setSubmitted(true);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
+
+  // Load student forms on mount
+  useEffect(() => {
+    let mounted = true;
+    async function loadForms() {
+      try {
+        setLoadingForms(true);
+        const list = await fetchStudentForms();
+        if (mounted) {
+          setForms(list);
+        }
+      } catch (err) {
+        console.error('[StudentFeedback] Failed to fetch student forms:', err);
+      } finally {
+        if (mounted) setLoadingForms(false);
+      }
+    }
+    loadForms();
+    return () => { mounted = false; };
+  }, []);
+
+  // When forms load or formIdParam changes, select the target form
+  useEffect(() => {
+    if (forms.length === 0) return;
+
+    let targetId: number | null = null;
+    if (formIdParam) {
+      const parsed = parseInt(formIdParam, 10);
+      if (!isNaN(parsed) && forms.some(f => f.id === parsed)) {
+        targetId = parsed;
+      }
+    }
+
+    // If no specific valid formId in URL, default to the first unsubmitted form or first form
+    if (!targetId && forms.length > 0) {
+      const unsubmitted = forms.find(f => !f.has_submitted);
+      targetId = unsubmitted ? unsubmitted.id : forms[0].id;
+    }
+
+    if (targetId && (!selectedForm || selectedForm.id !== targetId)) {
+      handleSelectForm(targetId);
+    }
+  }, [forms, formIdParam]);
+
+  const handleSelectForm = async (formId: number) => {
+    try {
+      setLoadingFormDetail(true);
+      setSubmitError(null);
+      setSubmitSuccess(false);
+      const detail = await fetchFormById(formId);
+      setSelectedForm(detail);
+      setSearchParams({ formId: String(formId) });
+
+      // Initialize empty answer map
+      const initialAnswers: Record<number, any> = {};
+      if (detail?.questions) {
+        for (const q of detail.questions) {
+          initialAnswers[q.id] = {
+            rating_value: undefined,
+            selected_option: undefined,
+            text_response: ''
+          };
+        }
+      }
+      setAnswers(initialAnswers);
+      setImageUrl(null);
+    } catch (err: any) {
+      console.error('[StudentFeedback] Error loading form details:', err);
+      setSubmitError('Failed to load survey questions.');
+    } finally {
+      setLoadingFormDetail(false);
+    }
   };
 
-  const canProceed = () => {
-    if (step === 0) return emotion !== '';
-    if (step === 1) return category !== '';
-    if (step === 2) return issue !== '';
-    if (step === 3) return frequency !== '';
-    if (step === 4) return true;
-    return true;
+  const handleSetRating = (questionId: number, rating: number) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: {
+        ...prev[questionId],
+        rating_value: rating
+      }
+    }));
   };
 
-  if (submitted && aiAnalysis) {
-    return (
-      <div className="max-w-2xl mx-auto">
-        <Card className="p-8 text-center">
-          <div className="h-16 w-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-4">
-            <Check size={32} className="text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Feedback Submitted!</h2>
-          <p className="text-slate-500 dark:text-slate-400 mb-6">Your feedback has been received and is being analyzed by our AI system.</p>
+  const handleSetOption = (questionId: number, option: string) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: {
+        ...prev[questionId],
+        selected_option: option
+      }
+    }));
+  };
 
-          {/* AI Analysis Preview */}
-          <div className="bg-violet-50 dark:bg-violet-900/20 rounded-2xl p-5 text-left mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <AIBadge>AI Analysis Preview</AIBadge>
-              <span className="text-xs text-slate-400">Demo Data</span>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Category</p>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{aiAnalysis.theme}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Issue</p>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{aiAnalysis.issue}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Sentiment</p>
-                <SentimentBadge sentiment={aiAnalysis.sentiment} />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Severity</p>
-                <SeverityBadge severity={aiAnalysis.severity} />
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-violet-200 dark:border-violet-800/50">
-              <p className="text-xs text-slate-400 mb-2">Possible contributing factors identified:</p>
-              <div className="flex flex-wrap gap-2">
-                {aiAnalysis.possibleCauses.map((cause, i) => (
-                  <span key={i} className="text-xs px-2 py-1 rounded-lg bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300">{cause}</span>
-                ))}
-              </div>
-            </div>
-          </div>
+  const handleSetText = (questionId: number, text: string) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: {
+        ...prev[questionId],
+        text_response: text
+      }
+    }));
+  };
 
-          <div className="flex gap-3 justify-center">
-            <Button variant="outline" onClick={() => navigate('/student/history')}>View My Feedback</Button>
-            <Button onClick={() => navigate('/student/dashboard')}>Back to Dashboard</Button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+  const validateSubmission = (): string | null => {
+    if (!selectedForm || !selectedForm.questions || selectedForm.questions.length === 0) {
+      return 'Survey does not contain questions.';
+    }
+
+    for (let i = 0; i < selectedForm.questions.length; i++) {
+      const q = selectedForm.questions[i];
+      const ans = answers[q.id];
+
+      if (q.is_required) {
+        if (q.question_type === 'rating' && (!ans || !ans.rating_value)) {
+          return `Please provide a rating for Question ${i + 1}.`;
+        }
+        if (q.question_type === 'mcq' && (!ans || !ans.selected_option)) {
+          return `Please select an option for Question ${i + 1}.`;
+        }
+        if (q.question_type === 'yes_no' && (!ans || !ans.selected_option)) {
+          return `Please select Yes or No for Question ${i + 1}.`;
+        }
+        if (q.question_type === 'text' && (!ans || !ans.text_response?.trim())) {
+          return `Please provide a written response for Question ${i + 1}.`;
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedForm) return;
+
+    const validationError = validateSubmission();
+    if (validationError) {
+      setSubmitError(validationError);
+      return;
+    }
+
+    setSubmitError(null);
+    setSubmitting(true);
+
+    try {
+      const payloadAnswers: FormAnswerSubmission[] = (selectedForm.questions || []).map(q => {
+        const ans = answers[q.id] || {};
+        return {
+          question_id: q.id,
+          rating_value: q.question_type === 'rating' ? ans.rating_value : undefined,
+          selected_option: (q.question_type === 'mcq' || q.question_type === 'yes_no') ? ans.selected_option : undefined,
+          text_response: q.question_type === 'text' ? ans.text_response?.trim() : undefined
+        };
+      });
+
+      await submitFormResponse(selectedForm.id, payloadAnswers, imageUrl);
+      setSubmitSuccess(true);
+      setImageUrl(null);
+
+      // Update the form status locally and in forms list
+      setSelectedForm(prev => prev ? { ...prev, has_submitted: true } : null);
+      setForms(prev => prev.map(f => f.id === selectedForm.id ? { ...f, has_submitted: true } : f));
+    } catch (err: any) {
+      console.error('[StudentFeedback] submit error:', err);
+      setSubmitError(err.response?.data?.message || err.message || 'Failed to submit feedback response.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const ratingLabels: Record<number, string> = {
+    1: 'Very Poor',
+    2: 'Poor',
+    3: 'Average',
+    4: 'Good',
+    5: 'Excellent'
+  };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      {/* Step indicator */}
-      <div className="flex items-center justify-between mb-6">
-        {steps.map((s, i) => (
-          <div key={s} className="flex items-center flex-1 last:flex-none">
-            <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300 ${
-              i === step ? 'bg-blue-600 text-white shadow-md scale-110' :
-              i < step ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
-            }`}>
-              {i < step ? <Check size={14} /> : i + 1}
-            </div>
-            {i < steps.length - 1 && (
-              <div className={`h-0.5 flex-1 mx-1 rounded-full transition-all duration-300 ${i < step ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
-            )}
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
+              <FileText className="w-5 h-5" />
+            </span>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              Department Feedback Surveys
+            </h1>
           </div>
-        ))}
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Submit anonymous feedback on official surveys published by your Head of Department ({user?.department || 'Department'}).
+          </p>
+        </div>
+
+        {/* Department Badge */}
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          <Badge variant="default" className="text-xs">
+            {user?.department}
+          </Badge>
+        </div>
       </div>
 
-      <Card className="p-6">
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">{steps[step]}</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Step {step + 1} of {steps.length}</p>
+      {/* Loading state */}
+      {loadingForms && (
+        <div className="p-12 text-center text-slate-400 dark:text-slate-500 flex flex-col items-center justify-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <p className="text-sm font-medium">Loading published department surveys...</p>
+        </div>
+      )}
 
-        {/* Step 0: Emotion */}
-        {step === 0 && (
-          <div>
-            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">How was your college experience today?</p>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              {emotions.map(e => {
-                const emoji = e === 'Excellent' ? '😄' : e === 'Good' ? '🙂' : e === 'Okay' ? '😐' : e === 'Poor' ? '😕' : '😞';
+      {/* No surveys available */}
+      {!loadingForms && forms.length === 0 && (
+        <Card className="p-12 text-center text-slate-500 dark:text-slate-400">
+          <FileText className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" />
+          <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-1">
+            No Published Surveys Available
+          </h3>
+          <p className="text-sm max-w-md mx-auto mb-6">
+            Your Head of Department has not published any surveys for your department at this time. When a new survey is announced, it will appear here.
+          </p>
+          <Button variant="outline" size="sm" onClick={() => navigate('/student/dashboard')}>
+            Return to Dashboard
+          </Button>
+        </Card>
+      )}
+
+      {/* Main survey view */}
+      {!loadingForms && forms.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Survey Selector List (Left Column) */}
+          <div className="space-y-3 lg:col-span-1">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">
+              Published Surveys ({forms.length})
+            </h2>
+
+            <div className="space-y-2">
+              {forms.map(f => {
+                const isSelected = selectedForm?.id === f.id;
                 return (
                   <button
-                    key={e}
-                    onClick={() => setEmotion(e)}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-300 hover:scale-105 ${
-                      emotion === e ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md' : 'border-slate-200 dark:border-slate-700'
+                    key={f.id}
+                    onClick={() => handleSelectForm(f.id)}
+                    className={`w-full text-left p-3.5 rounded-xl border backdrop-blur-md transition-all ${
+                      isSelected
+                        ? 'bg-cyan-500/15 dark:bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
+                        : 'bg-white/70 dark:bg-white/[0.04] border-slate-200/80 dark:border-white/10 hover:border-cyan-400/40 dark:hover:border-cyan-400/40'
                     }`}
                   >
-                    <span className="text-3xl">{emoji}</span>
-                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{e}</span>
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                        {f.target_academic_year || 'All Years'}
+                      </span>
+                      {f.has_submitted ? (
+                        <Badge variant="positive" className="text-[10px] py-0.5 px-2">
+                          <CheckCircle2 size={11} className="mr-1 inline" /> Submitted
+                        </Badge>
+                      ) : (
+                        <Badge variant="warning" className="text-[10px] py-0.5 px-2">
+                          <Clock size={11} className="mr-1 inline" /> Pending
+                        </Badge>
+                      )}
+                    </div>
+                    <h3 className={`text-sm font-semibold line-clamp-1 ${
+                      isSelected ? 'text-blue-900 dark:text-blue-200' : 'text-slate-800 dark:text-slate-200'
+                    }`}>
+                      {f.title}
+                    </h3>
+                    {f.description && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                        {f.description}
+                      </p>
+                    )}
                   </button>
                 );
               })}
             </div>
           </div>
-        )}
 
-        {/* Step 1: Category */}
-        {step === 1 && (
-          <div>
-            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">What would you like to talk about?</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {categories.map(cat => (
-                <button
-                  key={cat.name}
-                  onClick={() => setCategory(cat.name)}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all duration-300 hover:scale-105 ${cat.color} ${
-                    category === cat.name ? 'border-current shadow-md ring-2 ring-blue-500/20' : ''
-                  }`}
-                >
-                  <span className="text-2xl">{cat.icon}</span>
-                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{cat.name}</span>
-                </button>
-              ))}
-            </div>
+          {/* Survey Questions & Submission Form (Right Column) */}
+          <div className="lg:col-span-2">
+            {loadingFormDetail && (
+              <Card className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <p className="text-sm font-medium">Loading survey questions...</p>
+              </Card>
+            )}
+
+            {!loadingFormDetail && selectedForm && (
+              <div className="space-y-6">
+                {/* Form Header Card */}
+                <Card className="p-6 border-cyan-500/20 bg-white/70 dark:bg-white/[0.06] backdrop-blur-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <Badge variant="default" className="text-xs">
+                          {selectedForm.department}
+                        </Badge>
+                        {selectedForm.target_academic_year && (
+                          <Badge variant="low" className="text-xs">
+                            Target: {selectedForm.target_academic_year}
+                          </Badge>
+                        )}
+                        {selectedForm.has_submitted && (
+                          <Badge variant="positive" className="text-xs">
+                            <CheckCircle2 size={12} className="mr-1 inline" /> You have submitted this survey
+                          </Badge>
+                        )}
+                      </div>
+                      <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                        {selectedForm.title}
+                      </h2>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-lg border border-emerald-200/60 dark:border-emerald-800/60 flex-shrink-0">
+                      <ShieldCheck size={14} />
+                      <span className="font-semibold">Anonymous Feedback</span>
+                    </div>
+                  </div>
+
+                  {selectedForm.description && (
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
+                      {selectedForm.description}
+                    </p>
+                  )}
+                </Card>
+
+                {/* Error Banner */}
+                {submitError && (
+                  <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 flex items-center gap-3 text-sm animate-in fade-in">
+                    <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500" />
+                    <div className="flex-1 font-medium">{submitError}</div>
+                  </div>
+                )}
+
+                {/* Success Banner */}
+                {submitSuccess && (
+                  <Card className="p-8 text-center bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800">
+                    <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 mx-auto mb-3 flex items-center justify-center">
+                      <CheckCircle2 className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-lg font-bold text-emerald-900 dark:text-emerald-200 mb-1">
+                      Feedback Submitted Successfully!
+                    </h3>
+                    <p className="text-sm text-emerald-700 dark:text-emerald-400 max-w-md mx-auto mb-4">
+                      Your responses were securely and anonymously submitted. Your input will be aggregated into the department&apos;s collective AI analytics to drive departmental improvements.
+                    </p>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/student/dashboard')}>
+                      Return to Dashboard
+                    </Button>
+                  </Card>
+                )}
+
+                {/* Already Submitted State */}
+                {selectedForm.has_submitted && !submitSuccess && (
+                  <Card className="p-8 text-center bg-white/60 dark:bg-white/[0.04] border-slate-200/80 dark:border-white/10 backdrop-blur-xl">
+                    <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
+                    <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-1">
+                      Already Submitted
+                    </h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-4">
+                      You have already submitted your response for this survey. To protect response integrity, multiple submissions are not permitted.
+                    </p>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/student/dashboard')}>
+                      View Other Surveys
+                    </Button>
+                  </Card>
+                )}
+
+                {/* Question Response Form */}
+                {!selectedForm.has_submitted && !submitSuccess && (
+                  <div className="space-y-5">
+                    {(selectedForm.questions || []).map((q, idx) => (
+                      <Card key={q.id} className="p-5 space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-2.5">
+                            <span className="w-6 h-6 rounded-lg bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                              {idx + 1}
+                            </span>
+                            <div>
+                              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 leading-snug">
+                                {q.question_text}
+                                {q.is_required && <span className="text-rose-500 ml-1">*</span>}
+                              </h3>
+                              <p className="text-xs text-slate-400 mt-0.5 uppercase tracking-wider">
+                                {q.question_type.replace('_', ' ')}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Rating (1-5) Input */}
+                        {q.question_type === 'rating' && (
+                          <div className="pt-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {[1, 2, 3, 4, 5].map(starVal => {
+                                const isSelected = answers[q.id]?.rating_value === starVal;
+                                return (
+                                  <button
+                                    key={starVal}
+                                    type="button"
+                                    onClick={() => handleSetRating(q.id, starVal)}
+                                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold border backdrop-blur-md transition-all ${
+                                      isSelected
+                                        ? 'bg-amber-500 border-amber-400 text-white shadow-[0_0_15px_rgba(245,158,11,0.3)] scale-105'
+                                        : 'bg-white/70 dark:bg-white/[0.04] border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:border-amber-400/50'
+                                    }`}
+                                  >
+                                    <Star className={`w-4 h-4 ${isSelected ? 'fill-white' : 'text-amber-400'}`} />
+                                    <span>{starVal}</span>
+                                    <span className="text-xs font-normal opacity-90 hidden sm:inline">
+                                      ({ratingLabels[starVal]})
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            {answers[q.id]?.rating_value && (
+                              <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-2">
+                                Selected: {answers[q.id]?.rating_value} — {ratingLabels[answers[q.id]?.rating_value!]}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* MCQ Input */}
+                        {q.question_type === 'mcq' && (
+                          <div className="pt-2 space-y-2">
+                            {(q.options || []).map((opt, optIdx) => {
+                              const isSelected = answers[q.id]?.selected_option === opt;
+                              return (
+                                <button
+                                  key={optIdx}
+                                  type="button"
+                                  onClick={() => handleSetOption(q.id, opt)}
+                                  className={`w-full flex items-center justify-between p-3 rounded-xl border backdrop-blur-md text-left text-sm transition-all ${
+                                    isSelected
+                                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.15)]'
+                                      : 'bg-white/70 dark:bg-white/[0.04] border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-white/[0.08]'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <span className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs font-bold ${
+                                      isSelected
+                                        ? 'border-cyan-400 bg-cyan-500 text-white shadow-sm'
+                                        : 'border-slate-300 dark:border-white/20 text-slate-400'
+                                    }`}>
+                                      {String.fromCharCode(65 + optIdx)}
+                                    </span>
+                                    <span>{opt}</span>
+                                  </div>
+                                  {isSelected && <Check className="w-4 h-4 text-cyan-400" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Yes / No Input */}
+                        {q.question_type === 'yes_no' && (
+                          <div className="pt-2 flex items-center gap-3">
+                            {['Yes', 'No'].map(choice => {
+                              const isSelected = answers[q.id]?.selected_option === choice;
+                              return (
+                                <button
+                                  key={choice}
+                                  type="button"
+                                  onClick={() => handleSetOption(q.id, choice)}
+                                  className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold border text-center transition-all ${
+                                    isSelected
+                                      ? (choice === 'Yes'
+                                          ? 'bg-emerald-600 text-white border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                                          : 'bg-rose-600 text-white border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]')
+                                      : 'bg-white/70 dark:bg-white/[0.04] border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:bg-white/[0.08]'
+                                  }`}
+                                >
+                                  {choice}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Free Text Input */}
+                        {q.question_type === 'text' && (
+                          <div className="pt-2">
+                            <textarea
+                              rows={3}
+                              value={answers[q.id]?.text_response || ''}
+                              onChange={(e) => handleSetText(q.id, e.target.value)}
+                              placeholder="Type your response here..."
+                              className="w-full p-3 text-sm bg-white/70 dark:bg-white/[0.04] border border-slate-200 dark:border-white/15 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-400/50 text-slate-900 dark:text-slate-100 placeholder-slate-400 backdrop-blur-md shadow-sm"
+                            />
+                          </div>
+                        )}
+                      </Card>
+                    ))}
+
+                    {/* Image Attachment (Optional) */}
+                    <div className="pt-2">
+                      <ImageUpload
+                        value={imageUrl}
+                        onChange={setImageUrl}
+                        portalTheme="cyan"
+                        label="Attach Supporting Image or Screenshot (Optional)"
+                        helpText="Upload an image illustrating your feedback, classroom issue, lab equipment condition, or survey evidence (PNG, JPG, WEBP, GIF up to 10MB)."
+                      />
+                    </div>
+
+                    {/* Submit Button Bar */}
+                    <div className="pt-4 flex items-center justify-between gap-4">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => navigate('/student/dashboard')}
+                      >
+                        Cancel
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="primary"
+                        onClick={handleSubmit}
+                        disabled={submitting}
+                        className="px-6 shadow-md flex items-center gap-2"
+                      >
+                        {submitting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" /> Submitting...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4" /> Submit Survey Feedback
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
-
-        {/* Step 2: Issue */}
-        {step === 2 && category && (
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <AIBadge>AI Suggested Issues</AIBadge>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">What is the main issue with {category}?</p>
-            <div className="flex flex-wrap gap-2">
-              {(issueChips[category] || ['Other']).map(chip => (
-                <button
-                  key={chip}
-                  onClick={() => setIssue(chip)}
-                  className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    issue === chip
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  {chip}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Frequency */}
-        {step === 3 && (
-          <div>
-            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">How frequently does this happen?</p>
-            <div className="grid grid-cols-2 gap-3">
-              {frequencies.map(f => (
-                <button
-                  key={f}
-                  onClick={() => setFrequency(f)}
-                  className={`p-4 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    frequency === f
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Details */}
-        {step === 4 && (
-          <div>
-            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">Would you like to add any details?</p>
-            <textarea
-              value={details}
-              onChange={e => setDetails(e.target.value)}
-              placeholder="Describe your experience in more detail (optional)..."
-              rows={5}
-              className="w-full p-4 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors text-sm resize-none"
-            />
-            <div className="mt-4 flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-700/30">
-              <div className="flex items-center gap-2">
-                {anonymous ? <EyeOff size={18} className="text-slate-500" /> : <Eye size={18} className="text-slate-500" />}
-                <div>
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Submit anonymously</p>
-                  <p className="text-xs text-slate-400">Your identity will not be displayed in HOD/management analytics.</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setAnonymous(!anonymous)}
-                className={`relative h-6 w-11 rounded-full transition-colors ${anonymous ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'}`}
-              >
-                <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${anonymous ? 'translate-x-5' : 'translate-x-0.5'}`} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 5: Review */}
-        {step === 5 && (
-          <div>
-            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">Review your feedback before submitting:</p>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-700/30">
-                <span className="text-sm text-slate-500">Experience</span>
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{emotion}</span>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-700/30">
-                <span className="text-sm text-slate-500">Category</span>
-                <Badge variant="default">{category}</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-700/30">
-                <span className="text-sm text-slate-500">Issue</span>
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{issue}</span>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-700/30">
-                <span className="text-sm text-slate-500">Frequency</span>
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{frequency}</span>
-              </div>
-              {details && (
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/30">
-                  <p className="text-sm text-slate-500 mb-1">Details</p>
-                  <p className="text-sm text-slate-700 dark:text-slate-200">{details}</p>
-                </div>
-              )}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-700/30">
-                <span className="text-sm text-slate-500">Anonymous</span>
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{anonymous ? 'Yes' : 'No'}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-          <Button variant="ghost" onClick={() => step > 0 ? setStep(step - 1) : navigate('/student/dashboard')}>
-            <ChevronLeft size={16} />
-            {step > 0 ? 'Back' : 'Cancel'}
-          </Button>
-          {step < 5 ? (
-            <Button onClick={() => setStep(step + 1)} disabled={!canProceed()}>
-              Next
-              <ChevronRight size={16} />
-            </Button>
-          ) : (
-            <Button variant="ai" onClick={handleSubmit}>
-              <Send size={16} />
-              Submit Feedback
-            </Button>
-          )}
         </div>
-      </Card>
+      )}
     </div>
   );
 }

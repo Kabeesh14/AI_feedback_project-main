@@ -1,183 +1,507 @@
-import { useState } from 'react';
-import { Card, Badge, SentimentBadge, StatusBadge, EmptyState, Button } from '@/components/common/UI';
+import { useState, useEffect } from 'react';
+import { Card, Badge, Button, EmptyState } from '@/components/common/UI';
 import { Drawer } from '@/components/common/Modal';
-import { getAllFeedback } from '@/services/feedbackService';
+import {
+  fetchStudentForms,
+  fetchFormById,
+  fetchSubmissionStatus,
+  type FeedbackForm,
+  type SubmissionStatus
+} from '@/services/formService';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Filter, X, Clock, CheckCircle, AlertCircle, TrendingUp } from 'lucide-react';
-import type { Feedback, FeedbackStatus } from '@/types';
-
-const statusTimeline: { status: FeedbackStatus; label: string; icon: typeof Clock }[] = [
-  { status: 'received', label: 'Feedback Submitted', icon: MessageSquare },
-  { status: 'under_review', label: 'AI Categorized', icon: TrendingUp },
-  { status: 'action_planned', label: 'HOD Reviewed', icon: AlertCircle },
-  { status: 'in_progress', label: 'Action Planned', icon: Clock },
-  { status: 'resolved', label: 'Action Completed', icon: CheckCircle },
-];
+import { ImageLightboxModal } from '@/components/common/ImageUpload';
+import { getFullImageUrl } from '@/services/uploadService';
+import {
+  FileText,
+  Filter,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  ShieldCheck,
+  ChevronRight,
+  Loader2,
+  Calendar,
+  Building,
+  Check,
+  Star,
+  MessageSquare,
+  ArrowRight,
+  Camera,
+  Maximize2
+} from 'lucide-react';
 
 export function StudentHistory() {
   const { user } = useAuth();
-  const allFeedback = getAllFeedback(user?.department);
-  const studentFeedback = allFeedback.slice(0, 50);
-  const [selected, setSelected] = useState<Feedback | null>(null);
-  const [filter, setFilter] = useState<string>('all');
   const navigate = useNavigate();
 
-  const filtered = filter === 'all' ? studentFeedback : studentFeedback.filter(f => f.status === filter);
+  const [forms, setForms] = useState<FeedbackForm[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filters: { value: string; label: string }[] = [
-    { value: 'all', label: 'All' },
-    { value: 'received', label: 'Received' },
-    { value: 'under_review', label: 'Under Review' },
-    { value: 'action_planned', label: 'Action Planned' },
-    { value: 'in_progress', label: 'In Progress' },
-    { value: 'resolved', label: 'Resolved' },
+  // Filter state: 'all' | 'submitted' | 'pending'
+  const [filter, setFilter] = useState<'all' | 'submitted' | 'pending'>('all');
+
+  // Selected form for detail drawer
+  const [selectedForm, setSelectedForm] = useState<FeedbackForm | null>(null);
+  const [submissionDetail, setSubmissionDetail] = useState<SubmissionStatus | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [activeLightboxImage, setActiveLightboxImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const studentForms = await fetchStudentForms();
+        if (mounted) {
+          setForms(studentForms);
+        }
+      } catch (err: any) {
+        console.warn('[StudentHistory] fetchStudentForms error:', err);
+        if (mounted) {
+          setError(err.message || 'Failed to fetch department survey history.');
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    load();
+    return () => { mounted = false; };
+  }, [user]);
+
+  const handleOpenDetail = async (form: FeedbackForm) => {
+    setSelectedForm(form);
+    setSubmissionDetail(null);
+
+    if (form.has_submitted) {
+      try {
+        setLoadingDetail(true);
+        const statusData = await fetchSubmissionStatus(form.id);
+        setSubmissionDetail(statusData);
+      } catch (err) {
+        console.error('[StudentHistory] Error fetching submission status:', err);
+      } finally {
+        setLoadingDetail(false);
+      }
+    }
+  };
+
+  const filteredForms = forms.filter(f => {
+    if (filter === 'submitted') return f.has_submitted;
+    if (filter === 'pending') return !f.has_submitted;
+    return true;
+  });
+
+  const submittedCount = forms.filter(f => f.has_submitted).length;
+  const pendingCount = forms.filter(f => !f.has_submitted).length;
+
+  const filters: { value: 'all' | 'submitted' | 'pending'; label: string; count: number }[] = [
+    { value: 'all', label: 'All Surveys', count: forms.length },
+    { value: 'submitted', label: 'Submitted', count: submittedCount },
+    { value: 'pending', label: 'Pending Feedback', count: pendingCount },
   ];
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">My Feedback</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Track the journey of your feedback from submission to resolution {user?.department ? `· ${user.department}` : ''}
-        </p>
+    <div className="space-y-6 max-w-5xl mx-auto">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-100 dark:border-slate-800">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
+              <FileText className="w-5 h-5" />
+            </span>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              My Survey Feedback History
+            </h1>
+          </div>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Track official Head of Department surveys and review your submitted feedback responses {user?.department ? `· ${user.department}` : ''}.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          <Badge variant="default" className="text-xs">
+            {user?.department}
+          </Badge>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
-        <Filter size={16} className="text-slate-400 flex-shrink-0" />
+      {/* Summary KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="p-4 border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-0.5">
+                Total Targeted
+              </p>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                {forms.length}
+              </h3>
+            </div>
+            <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+              <FileText size={20} />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4 border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/20 dark:bg-emerald-950/10">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-0.5">
+                Responses Submitted
+              </p>
+              <h3 className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
+                {submittedCount}
+              </h3>
+            </div>
+            <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 size={20} />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4 border-amber-100 dark:border-amber-900/30 bg-amber-50/20 dark:bg-amber-950/10">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-0.5">
+                Pending Response
+              </p>
+              <h3 className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                {pendingCount}
+              </h3>
+            </div>
+            <div className="p-2.5 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">
+              <Clock size={20} />
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {error && (
+        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm flex items-center gap-2">
+          <AlertCircle size={16} className="flex-shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Filter Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <Filter size={16} className="text-slate-400 flex-shrink-0 mr-1" />
         {filters.map(f => (
           <button
             key={f.value}
             onClick={() => setFilter(f.value)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 backdrop-blur-md ${
               filter === f.value
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-[0_0_12px_rgba(6,182,212,0.2)]'
+                : 'bg-white/60 dark:bg-white/[0.04] text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-white/10 hover:border-cyan-400/30'
             }`}
           >
-            {f.label}
+            <span>{f.label}</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+              filter === f.value ? 'bg-cyan-500 text-white' : 'bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-slate-300'
+            }`}>
+              {f.count}
+            </span>
           </button>
         ))}
       </div>
 
-      {/* Timeline */}
-      {filtered.length === 0 ? (
+      {/* Loading state */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+          <Loader2 size={32} className="animate-spin mb-3 text-blue-500" />
+          <p className="text-sm font-medium">Loading survey feedback history...</p>
+        </div>
+      ) : filteredForms.length === 0 ? (
         <EmptyState
-          icon={<MessageSquare size={48} />}
-          title="No feedback matches the selected filters"
-          message="Try selecting a different filter to see your feedback history."
-          actionLabel="Clear Filters"
-          onAction={() => setFilter('all')}
+          icon={<FileText size={48} />}
+          title={forms.length === 0 ? "No Department Surveys Published" : "No Surveys Match Filter"}
+          message={
+            forms.length === 0
+              ? "Your Head of Department has not published any feedback surveys for your department yet."
+              : "Try switching filters to view your submitted or pending department surveys."
+          }
+          actionLabel={filter !== 'all' ? "Show All Surveys" : undefined}
+          onAction={filter !== 'all' ? () => setFilter('all') : undefined}
         />
       ) : (
-        <div className="relative">
-          {/* Vertical line */}
-          <div className="absolute left-5 top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700" />
+        <div className="space-y-3">
+          {filteredForms.map((form) => {
+            const isSubmitted = form.has_submitted;
+            const submittedDate = form.my_submitted_at
+              ? new Date(form.my_submitted_at).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+              : null;
 
-          <div className="space-y-4">
-            {filtered.map((fb, i) => (
-              <div key={fb.id} className="relative pl-14">
-                {/* Timeline dot */}
-                <div className={`absolute left-3 top-3 h-5 w-5 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center ${
-                  fb.status === 'resolved' ? 'bg-emerald-500' :
-                  fb.status === 'in_progress' ? 'bg-amber-500' :
-                  fb.status === 'action_planned' ? 'bg-violet-500' :
-                  fb.status === 'under_review' ? 'bg-blue-500' :
-                  'bg-slate-400'
-                }`}>
-                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                </div>
+            return (
+              <Card
+                key={form.id}
+                className="p-5 transition-all hover:border-blue-300 dark:hover:border-blue-700"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1.5 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {isSubmitted ? (
+                        <Badge variant="positive" className="text-xs">
+                          <CheckCircle2 size={12} className="mr-1 inline" /> Submitted
+                        </Badge>
+                      ) : (
+                        <Badge variant="warning" className="text-xs">
+                          <Clock size={12} className="mr-1 inline" /> Pending Response
+                        </Badge>
+                      )}
 
-                <Card className="p-4 cursor-pointer" hover onClick={() => setSelected(fb)}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                        <Badge variant="default">{fb.category}</Badge>
-                        <SentimentBadge sentiment={fb.sentiment} />
-                        {fb.anonymous && <Badge variant="ai">Anonymous</Badge>}
-                      </div>
-                      <p className="text-sm text-slate-700 dark:text-slate-200 mb-1">{fb.comment}</p>
-                      <p className="text-xs text-slate-400">
-                        {new Date(fb.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {fb.department}
-                      </p>
+                      {form.target_academic_year && (
+                        <Badge variant="low" className="text-xs">
+                          Target: {form.target_academic_year}
+                        </Badge>
+                      )}
+
+                      <span className="text-xs text-slate-400">
+                        {form.question_count || 0} Questions
+                      </span>
                     </div>
-                    <StatusBadge status={fb.status} />
+
+                    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                      {form.title}
+                    </h3>
+
+                    {form.description && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
+                        {form.description}
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-4 text-xs text-slate-400 pt-1">
+                      <span className="flex items-center gap-1">
+                        <Building size={13} /> {form.department}
+                      </span>
+                      {submittedDate && (
+                        <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                          <Check size={13} /> Submitted on {submittedDate}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </Card>
-              </div>
-            ))}
-          </div>
+
+                  {/* Actions Column */}
+                  <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-center">
+                    {isSubmitted ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenDetail(form)}
+                        className="text-xs flex items-center gap-1.5"
+                      >
+                        <FileText size={14} /> View Submission Details
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => navigate(`/student/feedback?formId=${form.id}`)}
+                        className="text-xs flex items-center gap-1.5 shadow-sm"
+                      >
+                        Complete Survey <ArrowRight size={14} />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      {/* Detail Drawer */}
-      <Drawer open={!!selected} onClose={() => setSelected(null)} title="Feedback Details">
-        {selected && (
+      {/* Submission Details Drawer */}
+      <Drawer
+        open={!!selectedForm}
+        onClose={() => setSelectedForm(null)}
+        title="Survey Submission Details"
+      >
+        {selectedForm && (
           <div className="space-y-5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="default">{selected.category}</Badge>
-              <SentimentBadge sentiment={selected.sentiment} />
-              <StatusBadge status={selected.status} />
-              {selected.anonymous && <Badge variant="ai">Anonymous</Badge>}
+            {/* Header Details */}
+            <div className="p-4 rounded-xl bg-white/70 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/10 space-y-2 backdrop-blur-md">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <Badge variant={selectedForm.has_submitted ? 'positive' : 'warning'}>
+                  {selectedForm.has_submitted ? 'Submitted' : 'Pending Response'}
+                </Badge>
+                <div className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
+                  <ShieldCheck size={14} />
+                  <span>Anonymous Response</span>
+                </div>
+              </div>
+
+              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                {selectedForm.title}
+              </h2>
+
+              {selectedForm.description && (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {selectedForm.description}
+                </p>
+              )}
+
+              <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-200/80 dark:border-white/10">
+                <div>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">Department:</span> {selectedForm.department}
+                </div>
+                <div>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">Target Cohort:</span> {selectedForm.target_academic_year || 'All Years'}
+                </div>
+                {submissionDetail?.submittedAt && (
+                  <div className="col-span-2 text-emerald-400">
+                    <span className="font-semibold">Submitted At:</span>{' '}
+                    {new Date(submissionDetail.submittedAt).toLocaleString()}
+                  </div>
+                )}
+              </div>
             </div>
 
+            {/* Questions & Recorded Answers */}
             <div>
-              <p className="text-xs text-slate-400 mb-1">Your Comment</p>
-              <p className="text-sm text-slate-700 dark:text-slate-200">{selected.comment}</p>
-            </div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+                <span>Submitted Responses</span>
+                {submissionDetail?.answers && (
+                  <Badge variant="default" className="text-[10px]">
+                    {submissionDetail.answers.length} Answers
+                  </Badge>
+                )}
+              </h3>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Department</p>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{selected.department}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Date</p>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{new Date(selected.date).toLocaleDateString()}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">AI Theme</p>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{selected.theme}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">AI Issue</p>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{selected.issue}</p>
-              </div>
-            </div>
+              {loadingDetail && (
+                <div className="py-8 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
+                  <Loader2 size={24} className="animate-spin text-blue-500" />
+                  <p className="text-xs">Loading your submitted responses...</p>
+                </div>
+              )}
 
-            {/* Status journey */}
-            <div>
-              <p className="text-xs text-slate-400 mb-3">Status Journey</p>
-              <div className="space-y-3">
-                {statusTimeline.map((step, i) => {
-                  const currentIndex = statusTimeline.findIndex(s => s.status === selected.status);
-                  const isDone = i <= currentIndex;
-                  const Icon = step.icon;
-                  return (
-                    <div key={step.status} className="flex items-center gap-3">
-                      <div className={`h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        isDone ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-700/50 text-slate-400'
-                      }`}>
-                        <Icon size={14} />
+              {!loadingDetail && submissionDetail?.answers && submissionDetail.answers.length > 0 ? (
+                <div className="space-y-3">
+                  {submissionDetail.answers.map((ans, idx) => (
+                    <div
+                      key={ans.question_id || idx}
+                      className="p-3.5 rounded-xl bg-white/70 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/10 space-y-2 backdrop-blur-md"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="w-5 h-5 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+                          {idx + 1}
+                        </span>
+                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                          {ans.question_text || `Question ${idx + 1}`}
+                        </p>
                       </div>
-                      <div className="flex-1">
-                        <p className={`text-sm ${isDone ? 'text-slate-700 dark:text-slate-200 font-medium' : 'text-slate-400'}`}>{step.label}</p>
+
+                      {/* Answer value display */}
+                      <div className="pl-7">
+                        {ans.question_type === 'rating' && ans.rating_value && (
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center text-amber-500">
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <Star
+                                  key={star}
+                                  size={14}
+                                  className={star <= (ans.rating_value || 0) ? 'fill-amber-500' : 'text-slate-300 dark:text-slate-600'}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                              {ans.rating_value} / 5
+                            </span>
+                          </div>
+                        )}
+
+                        {ans.question_type === 'mcq' && ans.selected_option && (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-300 bg-cyan-500/15 px-2.5 py-1 rounded-lg border border-cyan-500/30">
+                            <Check size={13} /> {ans.selected_option}
+                          </span>
+                        )}
+
+                        {ans.question_type === 'yes_no' && ans.selected_option && (
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold ${
+                            ans.selected_option === 'Yes'
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                              : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                          }`}>
+                            {ans.selected_option}
+                          </span>
+                        )}
+
+                        {ans.question_type === 'text' && (
+                          <div className="p-2.5 rounded-lg bg-white/60 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/10 text-xs text-slate-700 dark:text-slate-300">
+                            {ans.text_response || 'No written response provided.'}
+                          </div>
+                        )}
                       </div>
-                      {isDone && <CheckCircle size={14} className="text-emerald-500" />}
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                !loadingDetail && (
+                  <p className="text-xs text-slate-400 py-4 text-center">
+                    Submission recorded. Detailed question breakdown unavailable.
+                  </p>
+                )
+              )}
             </div>
+
+            {/* Attached Photo / Evidence if present */}
+            {submissionDetail?.imageUrl && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <Camera size={15} className="text-cyan-400" />
+                  <span>Attached Photo / Evidence</span>
+                </h3>
+                <div
+                  onClick={() => setActiveLightboxImage(getFullImageUrl(submissionDetail.imageUrl!))}
+                  className="group relative cursor-pointer overflow-hidden rounded-xl border border-slate-200 dark:border-white/15 bg-black/40 aspect-video max-h-56 transition-all hover:border-cyan-400/50 shadow-md"
+                  title="Click to view full photo"
+                >
+                  <img
+                    src={getFullImageUrl(submissionDetail.imageUrl)}
+                    alt="Submission attachment"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                    <span className="flex items-center gap-1.5 text-xs font-semibold text-cyan-300 bg-black/70 backdrop-blur-md px-3 py-1 rounded-lg border border-cyan-500/30">
+                      <Camera size={13} />
+                      <span>View Full Image</span>
+                      <Maximize2 size={12} className="ml-0.5 opacity-70" />
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
-              <Button variant="outline" size="sm" onClick={() => navigate('/student/feedback')}>Give More Feedback</Button>
-              <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>Close</Button>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedForm(null)}>
+                Close
+              </Button>
             </div>
           </div>
         )}
       </Drawer>
+
+      {/* Lightbox Modal */}
+      {Boolean(activeLightboxImage) && (
+        <ImageLightboxModal
+          isOpen={Boolean(activeLightboxImage)}
+          imageUrl={activeLightboxImage}
+          title={selectedForm?.title ? `${selectedForm.title} · Survey Attachment` : 'Survey Evidence Attachment'}
+          onClose={() => setActiveLightboxImage(null)}
+        />
+      )}
     </div>
   );
 }

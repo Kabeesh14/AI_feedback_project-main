@@ -1,0 +1,39 @@
+{
+  "name": "feedbackiq-backend",
+  "version": "1.0.0",
+  "description": "REST API Backend for Institutional Feedback Theme & Root-Cause Analytics Platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "db:init": "node database/initDb.js",
+    "test": "node tests/authTest.js && node tests/feedbackTest.js && node tests/aiTest.js && node tests/analyticsTest.js && node tests/alertActionTest.js && node tests/impactTest.js",
+    "test:auth": "node tests/authTest.js",
+    "test:feedback": "node tests/feedbackTest.js",
+    "test:ai": "node tests/aiTest.js",
+    "test:analytics": "node tests/analyticsTest.js",
+    "test:alerts": "node tests/alertActionTest.js",
+    "test:impact": "node tests/impactTest.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "firebase-admin": "^14.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.24.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  },
+  "keywords": [
+    "feedback",
+    "analytics",
+    "express",
+    "mysql"
+  ],
+  "author": "",
+  "license": "ISC"
+}
