@@ -11,3 +11,13 @@ backend/.env.*
 *.pem
 *serviceAccount*.json
 *firebase*.json
+
+# Uploads
+backend/uploads/
+
+# Database backup dumps
+backend/database/backup_*.sql
+backups/
+
+# Local sensitive development scripts
+backend/seed_more_image_feedback.cjs
