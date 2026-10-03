@@ -13,7 +13,8 @@ import {
   Clock,
   AlertCircle,
   ChevronRight,
-  ArrowRight
+  ArrowRight,
+  AlertTriangle
 } from 'lucide-react';
 import type { Feedback } from '@/types';
 
@@ -103,7 +104,14 @@ export function StudentDashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 self-start sm:self-center">
+          <div className="flex flex-wrap items-center gap-3 self-start sm:self-center">
+            <button
+              onClick={() => navigate('/student/report-issue')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-xs sm:text-sm font-medium hover:bg-cyan-500/30 transition-all shadow-md active:scale-95"
+            >
+              <AlertTriangle size={14} />
+              <span>Report Issue</span>
+            </button>
             <button
               onClick={() => navigate('/student/feedback')}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-[#2f2f33] text-xs sm:text-sm font-medium hover:bg-white/90 transition-all shadow-md active:scale-95"

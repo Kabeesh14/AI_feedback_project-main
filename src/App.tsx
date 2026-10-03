@@ -18,6 +18,7 @@ import { StudentAIAssistant } from '@/pages/student/StudentAIAssistant';
 import { StudentHistory } from '@/pages/student/StudentHistory';
 import { StudentNotifications } from '@/pages/student/StudentNotifications';
 import { StudentProfile } from '@/pages/student/StudentProfile';
+import { StudentReportIssue } from '@/pages/student/StudentReportIssue';
 
 // HOD pages
 import { HodDashboard } from '@/pages/hod/HodDashboard';
@@ -148,6 +149,7 @@ function App() {
             {/* Student */}
             <Route path="/student/dashboard" element={<ProtectedLayout allowedRoles={['student']} allowedPortals={['education']}><StudentDashboard /></ProtectedLayout>} />
             <Route path="/student/feedback" element={<ProtectedLayout allowedRoles={['student']} allowedPortals={['education']}><StudentFeedback /></ProtectedLayout>} />
+            <Route path="/student/report-issue" element={<ProtectedLayout allowedRoles={['student']} allowedPortals={['education']}><StudentReportIssue /></ProtectedLayout>} />
             <Route path="/student/actions" element={<ProtectedLayout allowedRoles={['student']} allowedPortals={['education']}><ActionsPage role="student" /></ProtectedLayout>} />
             <Route path="/student/ai-assistant" element={<ProtectedLayout allowedRoles={['student']} allowedPortals={['education']}><StudentAIAssistant /></ProtectedLayout>} />
             <Route path="/student/history" element={<ProtectedLayout allowedRoles={['student']} allowedPortals={['education']}><StudentHistory /></ProtectedLayout>} />

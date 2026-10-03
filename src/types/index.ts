@@ -70,7 +70,14 @@ export type Category =
   | 'Placement'
   | 'Library'
   | 'Examination'
-  | 'Other';
+  | 'Other'
+  | 'Classroom'
+  | 'Food / Canteen'
+  | 'Restroom'
+  | 'Furniture / Infrastructure'
+  | 'Computer / IT'
+  | 'Electricity'
+  | 'Other campus facilities';
 
 export type Year = '1st Year' | '2nd Year' | '3rd Year' | '4th Year';
 export const OFFICIAL_YEARS: Year[] = ['1st Year', '2nd Year', '3rd Year', '4th Year'];

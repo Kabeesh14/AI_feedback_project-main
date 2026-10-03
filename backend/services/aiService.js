@@ -26,7 +26,15 @@ const SUPPORTED_CATEGORIES = [
   'Transport',
   'Placement',
   'Library',
-  'Other'
+  'Other',
+  // Education Campus Facility categories
+  'Classroom',
+  'Food / Canteen',
+  'Restroom',
+  'Furniture / Infrastructure',
+  'Computer / IT',
+  'Electricity',
+  'Other campus facilities'
 ];
 
 // Heuristic keyword dictionaries

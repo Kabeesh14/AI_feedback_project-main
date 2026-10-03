@@ -10,7 +10,6 @@ import {
   type FormAnswerSubmission
 } from '@/services/formService';
 import { useAuth } from '@/context/AuthContext';
-import { ImageUpload } from '@/components/common/ImageUpload';
 import {
   FileText,
   Star,
@@ -46,7 +45,6 @@ export function StudentFeedback() {
     text_response?: string;
   }>>({});
 
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
@@ -115,7 +113,6 @@ export function StudentFeedback() {
         }
       }
       setAnswers(initialAnswers);
-      setImageUrl(null);
     } catch (err: any) {
       console.error('[StudentFeedback] Error loading form details:', err);
       setSubmitError('Failed to load survey questions.');
@@ -205,9 +202,8 @@ export function StudentFeedback() {
         };
       });
 
-      await submitFormResponse(selectedForm.id, payloadAnswers, imageUrl);
+      await submitFormResponse(selectedForm.id, payloadAnswers, null);
       setSubmitSuccess(true);
-      setImageUrl(null);
 
       // Update the form status locally and in forms list
       setSelectedForm(prev => prev ? { ...prev, has_submitted: true } : null);
@@ -548,17 +544,6 @@ export function StudentFeedback() {
                         )}
                       </Card>
                     ))}
-
-                    {/* Image Attachment (Optional) */}
-                    <div className="pt-2">
-                      <ImageUpload
-                        value={imageUrl}
-                        onChange={setImageUrl}
-                        portalTheme="cyan"
-                        label="Attach Supporting Image or Screenshot (Optional)"
-                        helpText="Upload an image illustrating your feedback, classroom issue, lab equipment condition, or survey evidence (PNG, JPG, WEBP, GIF up to 10MB)."
-                      />
-                    </div>
 
                     {/* Submit Button Bar */}
                     <div className="pt-4 flex items-center justify-between gap-4">

@@ -28,6 +28,14 @@ const SUPPORTED_CATEGORIES = [
   'Placement',
   'Library',
   'Other',
+  // Education Campus Facility categories
+  'Classroom',
+  'Food / Canteen',
+  'Restroom',
+  'Furniture / Infrastructure',
+  'Computer / IT',
+  'Electricity',
+  'Other campus facilities',
   // Bus Portal categories
   'Punctuality & Timing',
   'Driver & Safety',

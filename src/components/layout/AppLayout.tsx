@@ -19,6 +19,7 @@ interface NavItem {
 const studentNav: NavItem[] = [
   { label: 'Dashboard', path: '/student/dashboard', icon: <LayoutDashboard size={18} /> },
   { label: 'Give Feedback', path: '/student/feedback', icon: <MessageSquarePlus size={18} /> },
+  { label: 'Report an Issue', path: '/student/report-issue', icon: <AlertTriangle size={18} /> },
   { label: 'AI Assistant', path: '/student/ai-assistant', icon: <Sparkles size={18} /> },
   { label: 'My Feedback', path: '/student/history', icon: <History size={18} /> },
   { label: 'Notifications', path: '/student/notifications', icon: <Bell size={18} /> },
