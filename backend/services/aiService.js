@@ -667,11 +667,11 @@ async function getIssueExplainability(issueId, user) {
     };
   }
 
-  // Students cannot access administrative analytics
-  if (user.role === 'student') {
+  // Students and Faculty cannot access administrative analytics
+  if (user.role === 'student' || user.role === 'faculty') {
     return {
       status: 403,
-      message: 'Forbidden: Students cannot access administrative issue analytics.'
+      message: `Forbidden: ${user.role === 'faculty' ? 'Faculty members' : 'Students'} cannot access administrative issue analytics.`
     };
   }
 

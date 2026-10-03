@@ -607,6 +607,64 @@ async function getFeedbackImage(req, res) {
   }
 }
 
+/**
+ * GET /api/feedback/other-issues
+ * Retrieve Education student issues for HOD & Management with sector analytics
+ */
+async function getOtherIssues(req, res) {
+  try {
+    const user = req.user;
+
+    // Strict role authorization
+    if (user.role === 'faculty') {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Faculty members are not authorized to access student issues.'
+      });
+    }
+
+    if (user.role === 'student') {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Students cannot access the administrative other issues endpoint.'
+      });
+    }
+
+    if (user.role !== 'hod' && user.role !== 'management') {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Only Education HOD and Management can access Education other issues.'
+      });
+    }
+
+    // Portal isolation
+    const userPortal = (user.portal || 'education').toLowerCase();
+    if (userPortal !== 'education' && user.role !== 'management') {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Other Issues is only accessible within the Education portal.'
+      });
+    }
+
+    const data = await feedbackService.getEducationOtherIssues({
+      user,
+      query: req.query
+    });
+
+    return res.status(200).json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    console.error('[GET OTHER ISSUES ERROR]:', error);
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || 'Internal server error retrieving other issues.'
+    });
+  }
+}
+
 module.exports = {
   createFeedback,
   getAllFeedback,
@@ -615,6 +673,7 @@ module.exports = {
   getFeedbackById,
   getFeedbackImage,
   updateFeedback,
-  deleteFeedback
+  deleteFeedback,
+  getOtherIssues
 };
 

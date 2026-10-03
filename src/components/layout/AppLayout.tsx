@@ -69,7 +69,6 @@ const facultyNav: NavItem[] = [
   { label: 'Participation', path: '/faculty/forms', icon: <Users size={18} /> },
   { label: 'Student Feedback', path: '/faculty/student-feedback', icon: <MessageSquare size={18} /> },
   { label: 'My Feedback', path: '/faculty/history', icon: <History size={18} /> },
-  { label: 'Department Issues', path: '/faculty/issues', icon: <AlertTriangle size={18} /> },
   { label: 'AI Assistant', path: '/faculty/ai-assistant', icon: <MessageCircle size={18} /> },
   { label: 'Notifications', path: '/faculty/notifications', icon: <Bell size={18} /> },
 ];
@@ -77,7 +76,7 @@ const facultyNav: NavItem[] = [
 const hodNav: NavItem[] = [
   { label: 'Overview', path: '/hod/dashboard', icon: <LayoutDashboard size={18} /> },
   { label: 'Feedback', path: '/hod/forms', icon: <MessageSquare size={18} /> },
-  { label: 'Issues', path: '/hod/issues', icon: <AlertTriangle size={18} /> },
+  { label: 'Other Issues', path: '/hod/other-issues', icon: <AlertTriangle size={18} /> },
   { label: 'AI Insights', path: '/hod/ai-insights', icon: <Sparkles size={18} /> },
   { label: 'Themes', path: '/hod/themes', icon: <Layers size={18} /> },
   { label: 'Reports', path: '/hod/reports', icon: <FileText size={18} /> },

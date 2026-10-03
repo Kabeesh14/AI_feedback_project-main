@@ -164,10 +164,10 @@ async function getIssueIntelligence(req, res) {
     const issue = issues[0];
 
     // Role & Scope access checks
-    if (req.user.role === 'student') {
+    if (req.user.role === 'student' || req.user.role === 'faculty') {
       return res.status(403).json({
         success: false,
-        message: 'Forbidden: Students cannot access administrative issue intelligence.'
+        message: `Forbidden: ${req.user.role === 'faculty' ? 'Faculty members' : 'Students'} cannot access administrative issue intelligence.`
       });
     }
 
@@ -194,11 +194,11 @@ async function getIssueIntelligence(req, res) {
           message: `Forbidden: You are assigned to "${req.user.assigned_floor}" and cannot access this issue.`
         });
       }
-    } else if (req.user.role === 'hod' || req.user.role === 'faculty') {
+    } else if (req.user.role === 'hod') {
       if (issuePortal !== 'education' || !issue.department || issue.department.toLowerCase() !== (req.user.department || '').toLowerCase()) {
         return res.status(403).json({
           success: false,
-          message: `Forbidden: ${req.user.role === 'faculty' ? 'Faculty' : 'HOD'} of "${req.user.department}" cannot access issues from "${issue.department || issuePortal}".`
+          message: `Forbidden: HOD of "${req.user.department}" cannot access issues from "${issue.department || issuePortal}".`
         });
       }
     }
@@ -277,10 +277,10 @@ async function getRootCauses(req, res) {
     const issuePortal = (issue.portal || 'education').toLowerCase();
 
     // Authorization
-    if (req.user.role === 'student') {
+    if (req.user.role === 'student' || req.user.role === 'faculty') {
       return res.status(403).json({
         success: false,
-        message: 'Forbidden: Students cannot access root-cause intelligence.'
+        message: `Forbidden: ${req.user.role === 'faculty' ? 'Faculty members' : 'Students'} cannot access root-cause intelligence.`
       });
     }
 
@@ -305,11 +305,11 @@ async function getRootCauses(req, res) {
           message: `Forbidden: You are assigned to "${req.user.assigned_floor}" and cannot access this issue.`
         });
       }
-    } else if (req.user.role === 'hod' || req.user.role === 'faculty') {
+    } else if (req.user.role === 'hod') {
       if (issuePortal !== 'education' || !issue.department || issue.department.toLowerCase() !== (req.user.department || '').toLowerCase()) {
         return res.status(403).json({
           success: false,
-          message: `Forbidden: ${req.user.role === 'faculty' ? 'Faculty' : 'HOD'} of "${req.user.department}" cannot access root causes for "${issue.department || issuePortal}".`
+          message: `Forbidden: HOD of "${req.user.department}" cannot access root causes for "${issue.department || issuePortal}".`
         });
       }
     }
@@ -351,6 +351,13 @@ async function getRootCauses(req, res) {
  */
 async function getExplainability(req, res) {
   try {
+    if (req.user.role === 'student' || req.user.role === 'faculty') {
+      return res.status(403).json({
+        success: false,
+        message: `Forbidden: ${req.user.role === 'faculty' ? 'Faculty members' : 'Students'} cannot access issue explainability.`
+      });
+    }
+
     const issueId = parseInt(req.params.issueId, 10);
     if (isNaN(issueId)) {
       return res.status(400).json({

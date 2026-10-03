@@ -337,6 +337,15 @@ function verifyImageAccess(feedbackRecord, user) {
       if (feedbackRecord.submitter_role === 'faculty' && feedbackRecord.user_id !== user.id) {
         return { authorized: false, reason: 'Forbidden: Faculty cannot view images from peer faculty feedback.' };
       }
+      // Strict restriction: Faculty MUST NOT view student issue images
+      const campusSectors = [
+        'Library', 'Food / Canteen', 'Canteen', 'Food', 'Classroom',
+        'Laboratory', 'Restroom', 'Furniture / Infrastructure', 'Infrastructure',
+        'Computer / IT', 'Internet', 'Electricity', 'Other campus facilities', 'Other'
+      ];
+      if (feedbackRecord.user_id !== user.id && campusSectors.includes(feedbackRecord.category)) {
+        return { authorized: false, reason: 'Forbidden: Faculty members are not authorized to view student issue images.' };
+      }
       return { authorized: true };
     }
     return { authorized: false, reason: `Forbidden: Faculty can only view Education images from their department (${user.department}).` };

@@ -4,7 +4,7 @@
  * handles status codes (401, 403, 404, 500), and provides typed response wrappers.
  */
 
-const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/+$/, '');
+const BASE_URL = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://ai-feedback-project-main.onrender.com/api' : 'http://localhost:5000/api')).replace(/\/+$/, '');
 
 export class ApiError extends Error {
   status: number;

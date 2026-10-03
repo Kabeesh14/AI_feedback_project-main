@@ -320,3 +320,92 @@ export function getHeatmapData() {
     return row;
   });
 }
+
+export interface EducationOtherIssue {
+  id: number;
+  feedbackCode: string;
+  studentName: string;
+  registerNumber: string;
+  year: string;
+  sector: string;
+  rawCategory: string;
+  description: string;
+  imageUrl: string | null;
+  status: string;
+  statusNotes: string | null;
+  severity: string;
+  rating: number;
+  location: string | null;
+  department: string;
+  submissionDate: string;
+  createdAt: string;
+}
+
+export interface OtherIssuesSummary {
+  totalIssues: number;
+  pendingIssues: number;
+  resolvedIssues: number;
+  topSector: string;
+}
+
+export interface SectorBreakdownItem {
+  sector: string;
+  count: number;
+  percentage: number;
+}
+
+export interface OtherIssuesResponse {
+  summary: OtherIssuesSummary;
+  sectorBreakdown: SectorBreakdownItem[];
+  issues: EducationOtherIssue[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+/**
+ * Fetch Education Other Issues for HOD / Management
+ */
+export async function fetchEducationOtherIssues(params: {
+  sector?: string;
+  status?: string;
+  search?: string;
+  department?: string;
+  page?: number;
+  limit?: number;
+} = {}): Promise<OtherIssuesResponse> {
+  const queryParams: Record<string, any> = {};
+  if (params.sector && params.sector !== 'all') queryParams.sector = params.sector;
+  if (params.status && params.status !== 'all') queryParams.status = params.status;
+  if (params.search && params.search.trim()) queryParams.search = params.search.trim();
+  if (params.department && params.department !== 'all') queryParams.department = params.department;
+  if (params.page) queryParams.page = params.page;
+  if (params.limit) queryParams.limit = params.limit;
+
+  const res = await apiClient.get('/feedback/other-issues', { params: queryParams });
+  if (res.success && res.data) {
+    return res.data;
+  }
+  return {
+    summary: { totalIssues: 0, pendingIssues: 0, resolvedIssues: 0, topSector: 'None' },
+    sectorBreakdown: [],
+    issues: [],
+    pagination: { page: 1, limit: 50, total: 0, totalPages: 1 }
+  };
+}
+
+/**
+ * Update status of an issue (HOD / Management)
+ */
+export async function updateEducationIssueStatus(
+  id: number | string,
+  status: string,
+  statusNotes?: string
+): Promise<any> {
+  const res = await apiClient.put(`/feedback/${id}`, { status, statusNotes });
+  return res.data;
+}
+

@@ -25,6 +25,7 @@ import { HodDashboard } from '@/pages/hod/HodDashboard';
 import { HodAIInsights } from '@/pages/hod/HodAIInsights';
 import { HodRecommendations } from '@/pages/hod/HodRecommendations';
 import { HodFormParticipation } from '@/pages/hod/HodFormParticipation';
+import { HodOtherIssues } from '@/pages/hod/HodOtherIssues';
 
 // Faculty pages
 import { FacultyDashboard } from '@/pages/faculty/FacultyDashboard';
@@ -179,8 +180,8 @@ function App() {
             <Route path="/faculty/student-feedback/:id" element={<ProtectedLayout allowedRoles={['faculty']}><HodFormParticipation role="faculty" /></ProtectedLayout>} />
             <Route path="/faculty/actions" element={<Navigate to="/faculty/dashboard" replace />} />
             <Route path="/faculty/history" element={<ProtectedLayout allowedRoles={['faculty']}><FacultyHistory /></ProtectedLayout>} />
-            <Route path="/faculty/issues" element={<ProtectedLayout allowedRoles={['faculty']}><IssueExplorer role="faculty" /></ProtectedLayout>} />
-            <Route path="/faculty/issues/:issueId" element={<ProtectedLayout allowedRoles={['faculty']}><IssueIntelligence role="faculty" /></ProtectedLayout>} />
+            <Route path="/faculty/issues" element={<Navigate to="/faculty/dashboard" replace />} />
+            <Route path="/faculty/issues/:issueId" element={<Navigate to="/faculty/dashboard" replace />} />
             <Route path="/faculty/insights" element={<Navigate to="/faculty/dashboard" replace />} />
             <Route path="/faculty/ai-assistant" element={<ProtectedLayout allowedRoles={['faculty']}><AnalyticsAssistant role="faculty" /></ProtectedLayout>} />
             <Route path="/faculty/forms" element={<ProtectedLayout allowedRoles={['faculty']}><HodFormParticipation role="faculty" /></ProtectedLayout>} />
@@ -193,10 +194,11 @@ function App() {
             <Route path="/hod/forms" element={<ProtectedLayout allowedRoles={['hod']}><HodFormParticipation role="hod" /></ProtectedLayout>} />
             <Route path="/hod/forms/:id/participation" element={<ProtectedLayout allowedRoles={['hod']}><HodFormParticipation role="hod" /></ProtectedLayout>} />
             <Route path="/hod/feedback" element={<Navigate to="/hod/forms" replace />} />
+            <Route path="/hod/other-issues" element={<ProtectedLayout allowedRoles={['hod', 'management']} allowedPortals={['education']}><HodOtherIssues /></ProtectedLayout>} />
             <Route path="/hod/recommendations" element={<Navigate to="/hod/dashboard" replace />} />
             <Route path="/hod/ai-insights" element={<ProtectedLayout allowedRoles={['hod']}><HodAIInsights /></ProtectedLayout>} />
             <Route path="/hod/themes" element={<ProtectedLayout allowedRoles={['hod']}><ThemeExplorer role="hod" /></ProtectedLayout>} />
-            <Route path="/hod/issues" element={<ProtectedLayout allowedRoles={['hod']}><IssueExplorer role="hod" /></ProtectedLayout>} />
+            <Route path="/hod/issues" element={<Navigate to="/hod/other-issues" replace />} />
             <Route path="/hod/issues/:issueId" element={<ProtectedLayout allowedRoles={['hod']}><IssueIntelligence role="hod" /></ProtectedLayout>} />
             <Route path="/hod/root-cause" element={<Navigate to="/hod/dashboard" replace />} />
             <Route path="/hod/alerts" element={<Navigate to="/hod/dashboard" replace />} />

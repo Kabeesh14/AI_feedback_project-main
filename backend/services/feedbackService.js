@@ -63,6 +63,23 @@ const SUPPORTED_STATUSES = [
   'received'
 ];
 
+const CAMPUS_SECTOR_CATEGORIES = [
+  'Library',
+  'Food / Canteen',
+  'Canteen',
+  'Food',
+  'Classroom',
+  'Laboratory',
+  'Restroom',
+  'Furniture / Infrastructure',
+  'Infrastructure',
+  'Computer / IT',
+  'Internet',
+  'Electricity',
+  'Other campus facilities',
+  'Other'
+];
+
 /**
  * Format feedback record to be compatible with frontend types
  */
@@ -254,6 +271,10 @@ async function getFeedbackList({
     conditions.push('LOWER(f.department) = LOWER(?)');
     params.push(user.department);
     conditions.push('(u.role = \'student\' OR (f.user_id IS NULL AND u.role IS NULL))');
+    // Strict restriction: Faculty MUST NOT see Education student issue submissions
+    const sectorPlaceholders = CAMPUS_SECTOR_CATEGORIES.map(() => '?').join(', ');
+    conditions.push(`f.category NOT IN (${sectorPlaceholders})`);
+    params.push(...CAMPUS_SECTOR_CATEGORIES);
   } else if (user.role === 'hod') {
     conditions.push("f.portal = 'education'");
     conditions.push('LOWER(f.department) = LOWER(?)');
@@ -385,7 +406,7 @@ async function getFeedbackById({ id, user }) {
     // Faculty can view their own feedback, or student feedback from their department
     if (record.user_id === user.id) {
       // Own feedback - allow
-    } else if (record.department.toLowerCase() !== user.department.toLowerCase()) {
+    } else if (record.department && record.department.toLowerCase() !== user.department.toLowerCase()) {
       return {
         status: 403,
         message: `Forbidden: Faculty of "${user.department}" cannot access feedback from "${record.department}".`
@@ -394,6 +415,11 @@ async function getFeedbackById({ id, user }) {
       return {
         status: 403,
         message: 'Forbidden: Faculty cannot access feedback submitted by other faculty members.'
+      };
+    } else if (CAMPUS_SECTOR_CATEGORIES.includes(record.category)) {
+      return {
+        status: 403,
+        message: 'Forbidden: Faculty members are not authorized to view Education student issue submissions.'
       };
     }
   } else if (user.role === 'hod') {
@@ -492,13 +518,242 @@ async function deleteFeedback({ id, user }) {
   return { status: 200, message: `Feedback #${id} deleted successfully.` };
 }
 
+/**
+ * Retrieve Education student issues for HOD & Management with sector analytics
+ */
+async function getEducationOtherIssues({ user, query = {} }) {
+  // 1. Server-side role authorization
+  if (user.role === 'faculty') {
+    const err = new Error('Forbidden: Faculty members are not authorized to access student issues.');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  if (user.role === 'student') {
+    const err = new Error('Forbidden: Students cannot access the administrative other issues endpoint.');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  if (user.role !== 'hod' && user.role !== 'management') {
+    const err = new Error('Forbidden: Only Education HOD and Management can access Education other issues.');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const {
+    sector,
+    status,
+    search,
+    page = 1,
+    limit = 50,
+    department: requestedDept
+  } = query;
+
+  // 2. Department scoping
+  let targetDepartment = null;
+  if (user.role === 'hod') {
+    targetDepartment = user.department;
+    if (!targetDepartment) {
+      const err = new Error('Forbidden: HOD profile does not have an assigned department.');
+      err.statusCode = 400;
+      throw err;
+    }
+  } else if (user.role === 'management') {
+    if (requestedDept && requestedDept.toLowerCase() !== 'all' && requestedDept.toLowerCase() !== 'all departments') {
+      targetDepartment = requestedDept.trim();
+    }
+  }
+
+  const placeholders = CAMPUS_SECTOR_CATEGORIES.map(() => '?').join(', ');
+  const baseConditions = [
+    "f.portal = 'education'",
+    "(u.role = 'student' OR (f.user_id IS NULL AND u.role IS NULL))",
+    `f.category IN (${placeholders})`
+  ];
+  const baseParams = [...CAMPUS_SECTOR_CATEGORIES];
+
+  if (targetDepartment) {
+    baseConditions.push('LOWER(f.department) = LOWER(?)');
+    baseParams.push(targetDepartment);
+  }
+
+  const baseWhereClause = `WHERE ${baseConditions.join(' AND ')}`;
+
+  // 3. Sector breakdown analytics (calculated dynamically from database within authorized scope)
+  const [breakdownRows] = await pool.query(`
+    SELECT 
+      CASE 
+        WHEN f.category IN ('Food / Canteen', 'Canteen', 'Food') THEN 'Food / Canteen'
+        WHEN f.category IN ('Furniture / Infrastructure', 'Infrastructure') THEN 'Furniture / Infrastructure'
+        WHEN f.category IN ('Computer / IT', 'Internet') THEN 'Computer / IT'
+        WHEN f.category IN ('Other campus facilities', 'Other') THEN 'Other campus facilities'
+        ELSE f.category 
+      END AS sector,
+      COUNT(*) AS count
+    FROM feedback f
+    LEFT JOIN users u ON f.user_id = u.id
+    ${baseWhereClause}
+    GROUP BY sector
+    ORDER BY count DESC
+  `, baseParams);
+
+  // 4. Summary metrics
+  const [summaryRows] = await pool.query(`
+    SELECT 
+      COUNT(*) AS totalIssues,
+      SUM(CASE WHEN f.status NOT IN ('resolved', 'closed') THEN 1 ELSE 0 END) AS pendingIssues,
+      SUM(CASE WHEN f.status IN ('resolved', 'closed') THEN 1 ELSE 0 END) AS resolvedIssues
+    FROM feedback f
+    LEFT JOIN users u ON f.user_id = u.id
+    ${baseWhereClause}
+  `, baseParams);
+
+  const totalIssues = Number(summaryRows[0]?.totalIssues) || 0;
+  const pendingIssues = Number(summaryRows[0]?.pendingIssues) || 0;
+  const resolvedIssues = Number(summaryRows[0]?.resolvedIssues) || 0;
+
+  const sectorBreakdown = breakdownRows.map(r => ({
+    sector: r.sector,
+    count: Number(r.count),
+    percentage: totalIssues > 0 ? Math.round((Number(r.count) / totalIssues) * 100) : 0
+  }));
+
+  // 5. Build filtered query for issues table
+  const filterConditions = [...baseConditions];
+  const filterParams = [...baseParams];
+
+  if (status && status.toLowerCase() !== 'all') {
+    filterConditions.push('LOWER(f.status) = LOWER(?)');
+    filterParams.push(status.trim());
+  }
+
+  if (sector && sector.toLowerCase() !== 'all') {
+    const s = sector.trim();
+    if (s === 'Food / Canteen') {
+      filterConditions.push("f.category IN ('Food / Canteen', 'Canteen', 'Food')");
+    } else if (s === 'Furniture / Infrastructure') {
+      filterConditions.push("f.category IN ('Furniture / Infrastructure', 'Infrastructure')");
+    } else if (s === 'Computer / IT') {
+      filterConditions.push("f.category IN ('Computer / IT', 'Internet')");
+    } else if (s === 'Other campus facilities') {
+      filterConditions.push("f.category IN ('Other campus facilities', 'Other')");
+    } else {
+      filterConditions.push('f.category = ?');
+      filterParams.push(s);
+    }
+  }
+
+  if (search && search.trim()) {
+    const term = `%${search.trim()}%`;
+    filterConditions.push('(f.comment LIKE ? OR f.category LIKE ? OR u.name LIKE ? OR u.register_number LIKE ?)');
+    filterParams.push(term, term, term, term);
+  }
+
+  const filterWhereClause = `WHERE ${filterConditions.join(' AND ')}`;
+
+  // Count filtered issues
+  const [filteredCountRows] = await pool.query(`
+    SELECT COUNT(*) AS totalFiltered
+    FROM feedback f
+    LEFT JOIN users u ON f.user_id = u.id
+    ${filterWhereClause}
+  `, filterParams);
+  const totalFiltered = Number(filteredCountRows[0]?.totalFiltered) || 0;
+
+  // Pagination
+  const validPage = Math.max(1, parseInt(page, 10) || 1);
+  const validLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
+  const offset = (validPage - 1) * validLimit;
+
+  // Query issues
+  const issueQueryParams = [...filterParams, validLimit, offset];
+  const [issueRows] = await pool.query(`
+    SELECT 
+      f.id,
+      f.feedback_code,
+      f.category,
+      f.comment,
+      f.rating,
+      f.priority,
+      f.urgency,
+      f.status,
+      f.status_notes,
+      f.image_url,
+      f.location,
+      f.department,
+      f.created_at,
+      u.id AS student_user_id,
+      u.name AS student_name,
+      u.register_number,
+      u.year AS student_year,
+      f.academic_year
+    FROM feedback f
+    LEFT JOIN users u ON f.user_id = u.id
+    ${filterWhereClause}
+    ORDER BY f.created_at DESC
+    LIMIT ? OFFSET ?
+  `, issueQueryParams);
+
+  const formattedIssues = issueRows.map((r) => {
+    let sectorName = r.category;
+    if (['Food / Canteen', 'Canteen', 'Food'].includes(r.category)) sectorName = 'Food / Canteen';
+    else if (['Furniture / Infrastructure', 'Infrastructure'].includes(r.category)) sectorName = 'Furniture / Infrastructure';
+    else if (['Computer / IT', 'Internet'].includes(r.category)) sectorName = 'Computer / IT';
+    else if (['Other campus facilities', 'Other'].includes(r.category)) sectorName = 'Other campus facilities';
+
+    const studentName = r.student_name || 'Student';
+    const registerNumber = r.register_number || (r.student_user_id ? `REG-${r.student_user_id}` : 'N/A');
+    const year = r.student_year || r.academic_year || '3rd Year';
+
+    return {
+      id: r.id,
+      feedbackCode: r.feedback_code,
+      studentName,
+      registerNumber,
+      year,
+      sector: sectorName,
+      rawCategory: r.category,
+      description: r.comment,
+      imageUrl: r.image_url || null,
+      status: r.status || 'submitted',
+      statusNotes: r.status_notes || null,
+      severity: (r.priority || r.urgency || 'medium').toLowerCase(),
+      rating: r.rating || 3,
+      location: r.location || null,
+      department: r.department,
+      submissionDate: r.created_at ? new Date(r.created_at).toISOString() : new Date().toISOString(),
+      createdAt: r.created_at ? new Date(r.created_at).toISOString() : new Date().toISOString()
+    };
+  });
+
+  return {
+    summary: {
+      totalIssues,
+      pendingIssues,
+      resolvedIssues,
+      topSector: sectorBreakdown[0]?.sector || 'None'
+    },
+    sectorBreakdown,
+    issues: formattedIssues,
+    pagination: {
+      page: validPage,
+      limit: validLimit,
+      total: totalFiltered,
+      totalPages: Math.ceil(totalFiltered / validLimit) || 1
+    }
+  };
+}
+
 module.exports = {
   OFFICIAL_DEPARTMENTS,
   SUPPORTED_CATEGORIES,
   SUPPORTED_STATUSES,
+  CAMPUS_SECTOR_CATEGORIES,
   createFeedback,
   getFeedbackList,
   getFeedbackById,
   updateFeedback,
-  deleteFeedback
+  deleteFeedback,
+  getEducationOtherIssues
 };

@@ -163,7 +163,7 @@ export function LoginPage() {
   const handleGoogleSignIn = () => {
     setErrorMsg(null);
     const effectivePortal = getEffectivePortal();
-    const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/+$/, '');
+    const apiUrl = (import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://ai-feedback-project-main.onrender.com/api' : 'http://localhost:5000/api')).replace(/\/+$/, '');
     window.location.href = `${apiUrl}/auth/google?role=${encodeURIComponent(selectedRole)}&portal=${encodeURIComponent(effectivePortal)}`;
   };
 

@@ -245,6 +245,13 @@ async function getThemes(req, res) {
  */
 async function getIssues(req, res) {
   try {
+    if (req.user?.role === 'faculty') {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Faculty members are not authorized to access issue lists or analytics.'
+      });
+    }
+
     const scope = resolveAnalyticsDepartment(req, res);
     if (scope.error) return;
 
@@ -252,8 +259,6 @@ async function getIssues(req, res) {
     const isEducation = !scope.portal || scope.portal === 'education';
     if (
       isEducation && (
-        req.user?.role === 'faculty' ||
-        req.query?.role === 'faculty' ||
         req.user?.role === 'hod' ||
         req.query?.role === 'hod' ||
         req.user?.role === 'management' ||
@@ -290,6 +295,13 @@ async function getIssues(req, res) {
  */
 async function getRootCauses(req, res) {
   try {
+    if (req.user?.role === 'faculty') {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Faculty members are not authorized to access root cause analytics.'
+      });
+    }
+
     const scope = resolveAnalyticsDepartment(req, res);
     if (scope.error) return;
 

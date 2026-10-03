@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Card, Badge, Button, SeverityBadge } from '@/components/common/UI';
+import { Card, Badge, Button } from '@/components/common/UI';
 import { AIBadge } from '@/components/common/AIExplainer';
 import { AnimatedCounter } from '@/components/common/AnimatedCounter';
 import { fetchInstitutionStats, fetchTrends } from '@/services/analyticsService';
 import { 
   Activity, 
-  AlertTriangle, 
   MessageSquare, 
   TrendingUp, 
-  ChevronRight, 
   Brain, 
   History, 
   Building,
@@ -107,36 +105,23 @@ export function FacultyDashboard() {
   const totalFeedback = kpis?.totalFeedback ?? 0;
   const satisfactionRate = kpis?.satisfactionRate ?? 0;
   const positiveCount = dashboardData?.sentimentDistribution?.positive ?? 0;
-  const activeIssuesCount = kpis?.activeIssues ?? 0;
-  const criticalIssuesCount = kpis?.criticalIssues ?? 0;
   const healthScore = dashboardData?.pulse?.score ?? kpis?.pulseScore ?? (totalFeedback > 0 ? Math.round(100 - (kpis?.negativeRate ?? 0)) : 0);
   
   const pulseExplanation = dashboardData?.pulse?.explanation || (
     totalFeedback > 0 
-      ? `Today, ${totalFeedback} departmental feedback responses analyzed. Overall satisfaction is ${satisfactionRate}% with ${activeIssuesCount} active issues monitored.`
+      ? `Today, ${totalFeedback} departmental feedback responses analyzed. Overall satisfaction is ${satisfactionRate}%.`
       : `No active departmental feedback recorded for ${currentDept} today. Operational metrics are in baseline status.`
   );
 
   const liveInsights: string[] = [];
-  if (dashboardData?.topIssues && dashboardData.topIssues.length > 0) {
-    dashboardData.topIssues.slice(0, 2).forEach((iss) => {
-      if (iss.emergingReason) {
-        liveInsights.push(`${iss.title}: ${iss.emergingReason}`);
-      } else {
-        liveInsights.push(`${iss.priority.toUpperCase()} Priority: ${iss.title} (${iss.feedbackCount} reports, Impact: ${iss.impactScore}/100)`);
-      }
-    });
-  }
-  if (liveInsights.length < 2 && dashboardData?.topThemes && dashboardData.topThemes.length > 0) {
-    dashboardData.topThemes.slice(0, 2 - liveInsights.length).forEach((thm) => {
+  if (dashboardData?.topThemes && dashboardData.topThemes.length > 0) {
+    dashboardData.topThemes.slice(0, 2).forEach((thm) => {
       liveInsights.push(`${thm.name} category: ${thm.negativePercent}% negative sentiment across ${thm.responses} feedback responses.`);
     });
   }
   if (liveInsights.length === 0) {
-    liveInsights.push(`Operational monitoring active for ${currentDept}.`);
+    liveInsights.push(`Operational monitoring active for ${currentDept}. Metrics are stable.`);
   }
-
-  const departmentIssues = dashboardData?.topIssues || [];
 
   return (
     <div className="space-y-6">
@@ -209,23 +194,21 @@ export function FacultyDashboard() {
 
         <Card className="p-5">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Active Issues</span>
-            <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400">
-              <AlertTriangle size={20} />
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Submissions</span>
+            <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400">
+              <MessageSquare size={20} />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-3xl font-bold text-slate-800 dark:text-slate-100">
-              <AnimatedCounter value={activeIssuesCount} />
+              <AnimatedCounter value={totalFeedback} />
             </span>
-            {criticalIssuesCount > 0 && (
-              <span className="text-xs font-semibold text-red-600 dark:text-red-400">
-                {criticalIssuesCount} critical
-              </span>
-            )}
+            <span className="text-xs font-semibold text-slate-500">
+              recorded
+            </span>
           </div>
           <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            Identified departmental operational issues
+            Total departmental feedback responses
           </p>
         </Card>
 
@@ -318,52 +301,6 @@ export function FacultyDashboard() {
           </div>
         </Card>
       </div>
-
-      {/* Department Issues Preview (View Only - No Action Modifications) */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Department Issues</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Active student and faculty concerns in {currentDept} (Read-only view)
-            </p>
-          </div>
-          <Link to="/faculty/issues">
-            <Button variant="ghost" size="sm" className="flex items-center gap-1 text-xs">
-              View All Issues
-              <ChevronRight size={14} />
-            </Button>
-          </Link>
-        </div>
-
-        {departmentIssues.length === 0 ? (
-          <div className="text-center py-8 text-sm text-slate-500">
-            No active issues identified in {currentDept}.
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
-            {departmentIssues.slice(0, 4).map((issue) => (
-              <div key={issue.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <SeverityBadge severity={(issue.severity || issue.priority || 'medium').toLowerCase() as any} />
-                  <div>
-                    <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">{issue.title}</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Category: <span className="font-medium text-slate-700 dark:text-slate-300">{issue.category}</span> · Complaints: {issue.feedbackCount}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Badge variant={issue.status === 'resolved' ? 'green' : 'amber'}>
-                    {(issue.status || 'open').replace('_', ' ')}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
     </div>
   );
 }

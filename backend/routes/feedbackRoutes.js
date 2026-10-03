@@ -47,6 +47,7 @@ const optionalUpload = (req, res, next) => {
 // Specific sub-routes (before :id to avoid route collision)
 router.get('/my', feedbackController.getMyFeedback);
 router.get('/department/:department', feedbackController.getDepartmentFeedback);
+router.get('/other-issues', feedbackController.getOtherIssues);
 
 // Core CRUD routes
 router.post('/', optionalUpload, feedbackController.createFeedback);
