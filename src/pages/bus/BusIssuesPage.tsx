@@ -6,6 +6,7 @@ import { BusScopeSelector } from '@/components/bus/BusScopeSelector';
 import type { Issue, Action } from '@/types';
 import { fetchIssues } from '@/services/issueService';
 import { fetchActions, createAction, updateAction } from '@/services/actionService';
+import { isMatchingBus, formatBusDisplay } from '@/utils/busUtils';
 import {
   Bus,
   AlertTriangle,
@@ -53,9 +54,7 @@ export function BusIssuesPage() {
     try {
       if (showLoading) setLoading(true);
       const filters: Record<string, any> = { portal: 'bus' };
-      if (isBusIncharge && user?.bus_number) {
-        filters.bus_number = user.bus_number;
-      } else if (effectiveBusNumber) {
+      if (effectiveBusNumber) {
         filters.bus_number = effectiveBusNumber;
       }
 
@@ -65,11 +64,11 @@ export function BusIssuesPage() {
       ]);
 
       const scopedIssues = effectiveBusNumber
-        ? issuesData.filter(i => !i.bus_number || i.bus_number.trim().toLowerCase() === effectiveBusNumber.trim().toLowerCase())
+        ? issuesData.filter(i => isMatchingBus(i.bus_number, effectiveBusNumber))
         : issuesData;
 
       const scopedActions = effectiveBusNumber
-        ? actionsData.filter(a => !a.bus_number || a.bus_number.trim().toLowerCase() === effectiveBusNumber.trim().toLowerCase())
+        ? actionsData.filter(a => isMatchingBus(a.bus_number, effectiveBusNumber))
         : actionsData;
 
       setIssues(scopedIssues);
@@ -178,7 +177,7 @@ export function BusIssuesPage() {
   const relatedActions = selectedIssue
     ? actions.filter(a =>
         String(a.issueId) === String(selectedIssue.id) ||
-        (a.bus_number === selectedIssue.bus_number && a.issueTitle === selectedIssue.title)
+        (isMatchingBus(a.bus_number, selectedIssue.bus_number) && a.issueTitle === selectedIssue.title)
       )
     : [];
 
@@ -195,10 +194,8 @@ export function BusIssuesPage() {
             Bus Issues
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            {isBusIncharge
-              ? `Operational issues detected on ${userBusNumber}. Scope enforced by backend.`
-              : effectiveBusNumber
-              ? `Operational issues detected on ${effectiveBusNumber}.`
+            {effectiveBusNumber
+              ? `Operational issues detected on ${formatBusDisplay(effectiveBusNumber)}.`
               : 'Transport issues, punctuality delays, and vehicle maintenance requirements across all buses.'}
           </p>
         </div>
@@ -258,7 +255,7 @@ export function BusIssuesPage() {
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <Badge variant="neutral" className="font-mono text-xs">
-                        {selectedIssue.bus_number || userBusNumber}
+                        {formatBusDisplay(selectedIssue.bus_number || userBusNumber)}
                       </Badge>
                       <SeverityBadge severity={selectedIssue.severity} />
                       <StatusBadge status={selectedIssue.status} />
@@ -326,7 +323,7 @@ export function BusIssuesPage() {
                               <div className="space-y-1">
                                 <div className="flex items-center gap-2">
                                   <Badge variant="neutral" className="text-[11px] font-mono">
-                                    {act.bus_number || userBusNumber}
+                                    {formatBusDisplay(act.bus_number || userBusNumber)}
                                   </Badge>
                                   <StatusBadge status={act.status} />
                                   {feedback && (
@@ -413,7 +410,7 @@ export function BusIssuesPage() {
                         <Plus size={16} />
                       </div>
                       <h3 className="text-sm font-bold text-white">Create Bus Corrective Action</h3>
-                      <span className="text-xs text-amber-300/80 font-mono">({selectedIssue.bus_number || userBusNumber})</span>
+                      <span className="text-xs text-amber-300/80 font-mono">({formatBusDisplay(selectedIssue.bus_number || userBusNumber)})</span>
                     </div>
 
                     <form onSubmit={handleCreateAction} className="space-y-4">

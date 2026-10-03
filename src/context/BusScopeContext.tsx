@@ -26,10 +26,10 @@ export function BusScopeProvider({ children }: { children: ReactNode }) {
   const isBusIncharge = user?.role === 'bus_incharge';
   const isBusStudent = user?.role === 'student' && user?.portal === 'bus';
 
-  const canChangeScope = Boolean(isTransportIncharge || isManagement);
+  const canChangeScope = Boolean(isTransportIncharge || isManagement || isBusIncharge);
 
   const [selectedBus, setSelectedBusState] = useState<string>(() => {
-    if (isBusIncharge || isBusStudent) {
+    if (isBusStudent) {
       return user?.bus_number || 'Bus 14';
     }
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -39,12 +39,12 @@ export function BusScopeProvider({ children }: { children: ReactNode }) {
     return ALL_BUSES_VALUE;
   });
 
-  // Sync state if user role or assigned bus changes
+  // Sync state if student assigned bus changes
   useEffect(() => {
-    if (isBusIncharge || isBusStudent) {
+    if (isBusStudent) {
       setSelectedBusState(user?.bus_number || 'Bus 14');
     }
-  }, [user?.role, user?.bus_number, isBusIncharge, isBusStudent]);
+  }, [user?.role, user?.bus_number, isBusStudent]);
 
   const setSelectedBus = (bus: string) => {
     if (!canChangeScope) return;
@@ -59,7 +59,7 @@ export function BusScopeProvider({ children }: { children: ReactNode }) {
   const isAllBuses = selectedBus === ALL_BUSES_VALUE;
   const effectiveBusNumber = isAllBuses
     ? null
-    : (isBusIncharge || isBusStudent ? (user?.bus_number || 'Bus 14') : selectedBus);
+    : (isBusStudent ? (user?.bus_number || 'Bus 14') : selectedBus);
 
   return (
     <BusScopeContext.Provider

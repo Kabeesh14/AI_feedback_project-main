@@ -1,5 +1,6 @@
 const { pool } = require('../config/db');
 const { OFFICIAL_DEPARTMENTS, normalizeDepartment } = require('./analyticsService');
+const { buildBusNumberSql, isMatchingBus } = require('../utils/busUtils');
 
 /**
  * Format database row to Action API contract with compatibility aliases
@@ -219,9 +220,10 @@ async function getActions(department = null, filters = {}) {
     params.push(filters.portal);
   }
 
-  if (filters.bus_number) {
-    where += ' AND a.bus_number = ?';
-    params.push(filters.bus_number);
+  if (filters.bus_number && String(filters.bus_number).toUpperCase() !== 'ALL') {
+    const { clause, params: bParams } = buildBusNumberSql('a.bus_number', filters.bus_number);
+    where += ` AND ${clause}`;
+    params.push(...bParams);
   }
 
   if (filters.floor) {
@@ -268,9 +270,10 @@ async function getActions(department = null, filters = {}) {
     statWhere += ' AND portal = ?';
     statParams.push(filters.portal);
   }
-  if (filters.bus_number) {
-    statWhere += ' AND bus_number = ?';
-    statParams.push(filters.bus_number);
+  if (filters.bus_number && String(filters.bus_number).toUpperCase() !== 'ALL') {
+    const { clause, params: bParams } = buildBusNumberSql('bus_number', filters.bus_number);
+    statWhere += ` AND ${clause}`;
+    statParams.push(...bParams);
   }
   if (filters.floor) {
     statWhere += ' AND floor = ?';

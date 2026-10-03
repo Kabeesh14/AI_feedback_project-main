@@ -8,6 +8,7 @@ import { useBusScope } from '@/context/BusScopeContext';
 import { BusScopeSelector } from '@/components/bus/BusScopeSelector';
 import type { Feedback, Issue, Action } from '@/types';
 import { fetchFeedback } from '@/services/feedbackService';
+import { isMatchingBus, formatBusDisplay } from '@/utils/busUtils';
 import { fetchIssues } from '@/services/issueService';
 import { fetchActions } from '@/services/actionService';
 import {
@@ -47,15 +48,15 @@ export function BusDashboard() {
   const isTransportIncharge = user?.role === 'transport_incharge';
   const isManagement = user?.role === 'management';
 
-  const userBusNumber = isManagement || isTransportIncharge
-    ? (effectiveBusNumber || 'All Buses')
-    : (user?.bus_number || 'Not Assigned');
+  const userBusNumber = isManagement || isTransportIncharge || isBusIncharge
+    ? (effectiveBusNumber ? formatBusDisplay(effectiveBusNumber) : 'All Buses')
+    : (user?.bus_number ? formatBusDisplay(user.bus_number) : 'Not Assigned');
 
-  const boardingPoint = isManagement || isTransportIncharge
+  const boardingPoint = isManagement || isTransportIncharge || isBusIncharge
     ? (user?.boarding_point || 'Institution-wide Routes')
     : (user?.boarding_point || null);
 
-  const contextLabel = isManagement || isTransportIncharge ? 'Operational Scope' : 'Assigned Bus';
+  const contextLabel = isManagement || isTransportIncharge || isBusIncharge ? 'Operational Scope' : 'Assigned Bus';
 
   useEffect(() => {
     let mounted = true;
@@ -63,9 +64,7 @@ export function BusDashboard() {
       try {
         setLoading(true);
         const filters: Record<string, any> = { portal: 'bus' };
-        if (isBusIncharge && user?.bus_number) {
-          filters.bus_number = user.bus_number;
-        } else if (effectiveBusNumber) {
+        if (effectiveBusNumber) {
           filters.bus_number = effectiveBusNumber;
         }
 
@@ -77,13 +76,13 @@ export function BusDashboard() {
 
         if (mounted) {
           const scopedFb = effectiveBusNumber
-            ? fb.filter(f => !f.bus_number || f.bus_number.trim().toLowerCase() === effectiveBusNumber.trim().toLowerCase())
+            ? fb.filter(f => isMatchingBus(f.bus_number, effectiveBusNumber))
             : fb;
           const scopedIss = effectiveBusNumber
-            ? iss.filter(i => !i.bus_number || i.bus_number.trim().toLowerCase() === effectiveBusNumber.trim().toLowerCase())
+            ? iss.filter(i => isMatchingBus(i.bus_number, effectiveBusNumber))
             : iss;
           const scopedActs = effectiveBusNumber
-            ? acts.filter(a => !a.bus_number || a.bus_number.trim().toLowerCase() === effectiveBusNumber.trim().toLowerCase())
+            ? acts.filter(a => isMatchingBus(a.bus_number, effectiveBusNumber))
             : acts;
 
           setFeedbackList(scopedFb);
@@ -131,7 +130,7 @@ export function BusDashboard() {
 
           {/* Quick Context Card / Scope Selector */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            {(isTransportIncharge || isManagement) && (
+            {(isTransportIncharge || isManagement || isBusIncharge) && (
               <BusScopeSelector />
             )}
             <div className="flex items-center gap-4 bg-black/40 backdrop-blur-md px-5 py-3.5 rounded-2xl border border-white/10">
@@ -267,7 +266,7 @@ export function BusDashboard() {
                     <div className="flex items-center justify-between gap-3 mb-2">
                       <div className="flex items-center gap-2">
                         <Badge variant="neutral" className="text-xs font-mono">
-                          {fb.bus_number || userBusNumber}
+                          {formatBusDisplay(fb.bus_number || userBusNumber)}
                         </Badge>
                         <span className="text-xs font-medium text-slate-300">{fb.category}</span>
                       </div>
@@ -388,14 +387,14 @@ export function BusDashboard() {
         <ImageLightboxModal
           isOpen={Boolean(selectedImageFeedback)}
           imageUrl={selectedImageFeedback.imageUrl || selectedImageFeedback.image_url}
-          title={`${selectedImageFeedback.bus_number || userBusNumber} · ${selectedImageFeedback.category}`}
+          title={`${formatBusDisplay(selectedImageFeedback.bus_number || userBusNumber)} · ${selectedImageFeedback.category}`}
           feedback={{
             id: selectedImageFeedback.id,
             comment: selectedImageFeedback.comment,
             sentiment: selectedImageFeedback.sentiment,
             status: selectedImageFeedback.status,
             category: selectedImageFeedback.category,
-            scope: selectedImageFeedback.bus_number || userBusNumber,
+            scope: formatBusDisplay(selectedImageFeedback.bus_number || userBusNumber),
             date: selectedImageFeedback.date,
             anonymous: selectedImageFeedback.anonymous,
             portal: 'bus'

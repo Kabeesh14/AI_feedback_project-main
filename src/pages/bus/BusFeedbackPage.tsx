@@ -5,6 +5,7 @@ import { useBusScope } from '@/context/BusScopeContext';
 import { BusScopeSelector } from '@/components/bus/BusScopeSelector';
 import type { Feedback } from '@/types';
 import { fetchFeedback, addFeedback } from '@/services/feedbackService';
+import { isMatchingBus, formatBusDisplay, normalizeBusNumber } from '@/utils/busUtils';
 import { ImageUpload, ImageLightboxModal } from '@/components/common/ImageUpload';
 import { getFullImageUrl } from '@/services/uploadService';
 import {
@@ -72,9 +73,7 @@ export function BusFeedbackPage() {
     try {
       setLoading(true);
       const filters: Record<string, any> = { portal: 'bus' };
-      if (isBusIncharge && user?.bus_number) {
-        filters.bus_number = user.bus_number;
-      } else if (effectiveBusNumber) {
+      if (effectiveBusNumber) {
         filters.bus_number = effectiveBusNumber;
       }
       const data = await fetchFeedback(filters);
@@ -144,17 +143,22 @@ export function BusFeedbackPage() {
   };
 
   const filteredList = feedbackList.filter(f => {
-    if (effectiveBusNumber && f.bus_number && f.bus_number.trim().toLowerCase() !== effectiveBusNumber.trim().toLowerCase()) {
+    if (effectiveBusNumber && !isMatchingBus(f.bus_number, effectiveBusNumber)) {
       return false;
     }
     if (filterCategory !== 'ALL' && f.category !== filterCategory) return false;
     if (filterSentiment !== 'ALL' && f.sentiment !== filterSentiment) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
+      const normQ = normalizeBusNumber(q);
+      const busMatch = f.bus_number && (
+        f.bus_number.toLowerCase().includes(q) ||
+        (normQ && normalizeBusNumber(f.bus_number) === normQ)
+      );
       return (
         (f.comment && f.comment.toLowerCase().includes(q)) ||
         (f.category && f.category.toLowerCase().includes(q)) ||
-        (f.bus_number && f.bus_number.toLowerCase().includes(q))
+        busMatch
       );
     }
     return true;
@@ -174,8 +178,8 @@ export function BusFeedbackPage() {
           </h1>
           <p className="text-sm text-slate-400 mt-1">
             {isStudent
-              ? `Share your daily commute experience or report bus issues for ${userBusNumber}. Route-scoped with photo upload.`
-              : `Review operational feedback for ${isBusIncharge ? userBusNumber : effectiveBusNumber ? `${effectiveBusNumber} only` : 'all transport buses'}.`}
+              ? `Share your daily commute experience or report bus issues for ${formatBusDisplay(userBusNumber)}. Route-scoped with photo upload.`
+              : `Review operational feedback for ${effectiveBusNumber ? `${formatBusDisplay(effectiveBusNumber)} only` : 'all transport buses'}.`}
           </p>
         </div>
 
@@ -468,7 +472,7 @@ export function BusFeedbackPage() {
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <Badge variant="neutral" className="text-xs font-mono">
-                          {item.bus_number || userBusNumber}
+                          {formatBusDisplay(item.bus_number || userBusNumber)}
                         </Badge>
                         <span className="text-xs font-semibold text-amber-400">{item.category}</span>
                       </div>
@@ -478,7 +482,7 @@ export function BusFeedbackPage() {
                             type="button"
                             onClick={() => {
                               setActiveLightboxImage(getFullImageUrl(itemImg));
-                              setActiveLightboxTitle(`${item.bus_number || userBusNumber} · ${item.category}`);
+                              setActiveLightboxTitle(`${formatBusDisplay(item.bus_number || userBusNumber)} · ${item.category}`);
                               setActiveLightboxFeedback(item);
                             }}
                             className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-white border border-amber-500/40 hover:border-amber-400 transition-all shadow-sm active:scale-95 cursor-pointer"
@@ -500,7 +504,7 @@ export function BusFeedbackPage() {
                       <div
                         onClick={() => {
                           setActiveLightboxImage(getFullImageUrl(itemImg));
-                          setActiveLightboxTitle(`${item.bus_number || userBusNumber} · ${item.category}`);
+                          setActiveLightboxTitle(`${formatBusDisplay(item.bus_number || userBusNumber)} · ${item.category}`);
                           setActiveLightboxFeedback(item);
                         }}
                         className="group relative cursor-pointer overflow-hidden rounded-xl border border-white/15 bg-black/50 aspect-video max-h-48 transition-all hover:border-amber-400/50"

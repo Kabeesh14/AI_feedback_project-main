@@ -2,6 +2,7 @@ const { initializeApp, getApps, cert } = require('firebase-admin/app');
 const { getStorage } = require('firebase-admin/storage');
 const path = require('path');
 const fs = require('fs');
+const { isMatchingBus } = require('../utils/busUtils');
 
 // Ensure environment variables from backend/.env are loaded
 if (!process.env.FIREBASE_PROJECT_ID) {
@@ -304,8 +305,7 @@ function verifyImageAccess(feedbackRecord, user) {
 
   // Bus Incharge: only for their assigned bus
   if (user.role === 'bus_incharge') {
-    if (portal === 'bus' && feedbackRecord.bus_number && user.bus_number &&
-        feedbackRecord.bus_number.trim().toLowerCase() === user.bus_number.trim().toLowerCase()) {
+    if (portal === 'bus' && (!user.bus_number || isMatchingBus(feedbackRecord.bus_number, user.bus_number))) {
       return { authorized: true };
     }
     return { authorized: false, reason: `Forbidden: Bus Incharge can only view images for their assigned bus (${user.bus_number}).` };

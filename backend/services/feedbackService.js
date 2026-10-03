@@ -1,5 +1,6 @@
 const { pool } = require('../config/db');
 const { processFeedbackAI } = require('./aiService');
+const { buildBusNumberSql, isMatchingBus } = require('../utils/busUtils');
 
 const OFFICIAL_DEPARTMENTS = [
   'Information Technology',
@@ -252,15 +253,12 @@ async function getFeedbackList({
       conditions.push('f.portal = ?');
       params.push(user.portal.toLowerCase());
     }
-  } else if (user.role === 'bus_incharge') {
+  } else if (user.role === 'bus_incharge' || user.role === 'transport_incharge') {
     conditions.push("f.portal = 'bus'");
-    conditions.push('f.bus_number = ?');
-    params.push(user.bus_number);
-  } else if (user.role === 'transport_incharge') {
-    conditions.push("f.portal = 'bus'");
-    if (bus_number) {
-      conditions.push('f.bus_number = ?');
-      params.push(bus_number);
+    if (bus_number && String(bus_number).toUpperCase() !== 'ALL') {
+      const { clause, params: bParams } = buildBusNumberSql('f.bus_number', bus_number);
+      conditions.push(clause);
+      params.push(...bParams);
     }
   } else if (user.role === 'hostel_warden') {
     conditions.push("f.portal = 'hostel'");
@@ -289,9 +287,10 @@ async function getFeedbackList({
     if (portal) {
       conditions.push('f.portal = ?');
       params.push(portal.toLowerCase());
-      if (portal.toLowerCase() === 'bus' && bus_number) {
-        conditions.push('f.bus_number = ?');
-        params.push(bus_number);
+      if (portal.toLowerCase() === 'bus' && bus_number && String(bus_number).toUpperCase() !== 'ALL') {
+        const { clause, params: bParams } = buildBusNumberSql('f.bus_number', bus_number);
+        conditions.push(clause);
+        params.push(...bParams);
       } else if (portal.toLowerCase() === 'hostel' && floor) {
         conditions.push('f.floor = ?');
         params.push(floor);

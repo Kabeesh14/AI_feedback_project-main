@@ -1,6 +1,7 @@
 const { pool } = require('../config/db');
 const actionService = require('../services/actionService');
 const { OFFICIAL_DEPARTMENTS } = require('../services/analyticsService');
+const { isMatchingBus } = require('../utils/busUtils');
 
 /**
  * Helper to resolve and strictly validate scope for actions
@@ -13,14 +14,14 @@ function resolveActionDepartment(req, res) {
   const requestedFloor = req.query.floor || req.body?.floor;
 
   if (role === 'bus_incharge') {
-    if (requestedBus && requestedBus.trim().toLowerCase() !== (bus_number || '').trim().toLowerCase()) {
+    if (requestedBus && requestedBus.toUpperCase() !== 'ALL' && bus_number && !isMatchingBus(requestedBus, bus_number)) {
       res.status(403).json({
         success: false,
         message: `Forbidden: You are assigned to "${bus_number}" and cannot access "${requestedBus}".`
       });
       return { error: true };
     }
-    return { department: null, portal: 'bus', bus_number, error: false };
+    return { department: null, portal: 'bus', bus_number: requestedBus || bus_number || null, error: false };
   }
 
   if (role === 'transport_incharge') {

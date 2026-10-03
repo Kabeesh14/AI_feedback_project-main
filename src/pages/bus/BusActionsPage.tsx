@@ -5,6 +5,7 @@ import { useBusScope } from '@/context/BusScopeContext';
 import { BusScopeSelector } from '@/components/bus/BusScopeSelector';
 import type { Action } from '@/types';
 import { fetchActions, updateAction } from '@/services/actionService';
+import { isMatchingBus, formatBusDisplay } from '@/utils/busUtils';
 import {
   Bus,
   CheckSquare,
@@ -36,14 +37,12 @@ export function BusActionsPage() {
     try {
       if (showLoading) setLoading(true);
       const filters: Record<string, any> = { portal: 'bus' };
-      if (isBusIncharge && user?.bus_number) {
-        filters.bus_number = user.bus_number;
-      } else if (effectiveBusNumber) {
+      if (effectiveBusNumber) {
         filters.bus_number = effectiveBusNumber;
       }
       const data = await fetchActions(null, filters);
       const scoped = effectiveBusNumber
-        ? data.filter(a => !a.bus_number || a.bus_number.trim().toLowerCase() === effectiveBusNumber.trim().toLowerCase())
+        ? data.filter(a => isMatchingBus(a.bus_number, effectiveBusNumber))
         : data;
       setActions(scoped);
     } catch (err: any) {
@@ -96,10 +95,8 @@ export function BusActionsPage() {
             Bus Action Tracker
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            {isBusIncharge
-              ? `Operational corrective actions assigned to ${userBusNumber}.`
-              : effectiveBusNumber
-              ? `Operational corrective actions assigned to ${effectiveBusNumber}.`
+            {effectiveBusNumber
+              ? `Operational corrective actions assigned to ${formatBusDisplay(effectiveBusNumber)}.`
               : 'Corrective maintenance and punctuality improvement actions across all buses.'}
           </p>
         </div>
@@ -133,7 +130,7 @@ export function BusActionsPage() {
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-3">
                     <Badge variant="neutral" className="text-xs font-mono">
-                      {act.bus_number || userBusNumber}
+                      {formatBusDisplay(act.bus_number || userBusNumber)}
                     </Badge>
                     <div className="flex items-center gap-2">
                       {feedback && (

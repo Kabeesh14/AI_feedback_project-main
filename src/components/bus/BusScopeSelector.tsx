@@ -25,7 +25,7 @@ export function BusScopeSelector({
   const isStudent = user?.role === 'student' && user?.portal === 'bus';
   const boardingPoint = user?.boarding_point || 'Central Station';
 
-  // For fixed-scope users (Bus Incharge & Student), show non-interactive pill
+  // For fixed-scope users (Student), show non-interactive pill
   if (!canChangeScope) {
     const assignedBus = user?.bus_number || 'Bus 14';
     return (
@@ -48,7 +48,7 @@ export function BusScopeSelector({
     );
   }
 
-  // For Transport Incharge & Management: Interactive Bus 1-50 Dropdown
+  // For Transport Incharge, Bus Incharge & Management: Interactive Bus 1-50 Dropdown
   return (
     <div
       className={`flex items-center flex-wrap gap-2.5 bg-slate-900/80 border border-white/10 hover:border-amber-400/40 focus-within:border-amber-400/60 px-3.5 py-1.5 rounded-xl text-xs text-slate-300 shadow-lg backdrop-blur-xl transition-all ${className}`}

@@ -22,20 +22,8 @@ function resolveAnalyticsDepartment(req, res) {
     return { error: true };
   }
 
-  // 2. Bus Incharge
-  if (role === 'bus_incharge') {
-    if (requestedBus && requestedBus.trim().toLowerCase() !== (bus_number || '').trim().toLowerCase()) {
-      res.status(403).json({
-        success: false,
-        message: `Forbidden: You are assigned to "${bus_number}" and cannot access analytics for "${requestedBus}".`
-      });
-      return { error: true };
-    }
-    return { department: null, portal: 'bus', bus_number, error: false };
-  }
-
-  // 3. Transport Incharge
-  if (role === 'transport_incharge') {
+  // 2. Bus Incharge & Transport Incharge
+  if (role === 'bus_incharge' || role === 'transport_incharge') {
     return { department: null, portal: 'bus', bus_number: requestedBus || null, error: false };
   }
 

@@ -1,3 +1,5 @@
+const { isMatchingBus } = require('../utils/busUtils');
+
 /**
  * Role-Based Access Control Middleware
  * Restricts route access to specified roles.
@@ -208,7 +210,7 @@ function requireBusAccess(getBusParam = (req) => req.params.bus_number || req.qu
           message: 'Forbidden: Bus Incharge does not have an assigned bus number.'
         });
       }
-      if (targetBus && targetBus.trim().toLowerCase() !== bus_number.trim().toLowerCase()) {
+      if (targetBus && targetBus.toUpperCase() !== 'ALL' && !isMatchingBus(targetBus, bus_number)) {
         return res.status(403).json({
           success: false,
           message: `Forbidden: You are assigned to "${bus_number}" and cannot access "${targetBus}".`
@@ -218,7 +220,7 @@ function requireBusAccess(getBusParam = (req) => req.params.bus_number || req.qu
     }
 
     if (role === 'student') {
-      if (targetBus && bus_number && targetBus.trim().toLowerCase() !== bus_number.trim().toLowerCase()) {
+      if (targetBus && bus_number && targetBus.toUpperCase() !== 'ALL' && !isMatchingBus(targetBus, bus_number)) {
         return res.status(403).json({
           success: false,
           message: 'Forbidden: You cannot access bus data outside your assigned bus.'
@@ -301,7 +303,7 @@ function resolveTrustedBus(user, clientRequestedBus = null) {
     return clientRequestedBus || null;
   }
   if (user.role === 'bus_incharge') {
-    return user.bus_number || null;
+    return clientRequestedBus || user.bus_number || null;
   }
   if (user.role === 'student') {
     return user.bus_number || null;

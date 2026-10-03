@@ -1,6 +1,7 @@
 const feedbackService = require('../services/feedbackService');
 const firebaseStorageService = require('../services/firebaseStorageService');
 const { pool } = require('../config/db');
+const { isMatchingBus } = require('../utils/busUtils');
 
 /**
  * POST /api/feedback
@@ -214,8 +215,8 @@ async function getAllFeedback(req, res) {
 
     if (user.role === 'bus_incharge') {
       effectivePortal = 'bus';
-      effectiveBus = user.bus_number;
-      if (requestedBus && requestedBus.trim().toLowerCase() !== user.bus_number.trim().toLowerCase()) {
+      effectiveBus = requestedBus || user.bus_number;
+      if (requestedBus && requestedBus.toUpperCase() !== 'ALL' && user.bus_number && !isMatchingBus(requestedBus, user.bus_number)) {
         return res.status(403).json({
           success: false,
           message: `Forbidden: You are assigned to "${user.bus_number}" and cannot access "${requestedBus}".`

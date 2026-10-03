@@ -5,6 +5,7 @@ import { useBusScope } from '@/context/BusScopeContext';
 import { BusScopeSelector } from '@/components/bus/BusScopeSelector';
 import type { Feedback } from '@/types';
 import { fetchFeedback } from '@/services/feedbackService';
+import { isMatchingBus, formatBusDisplay } from '@/utils/busUtils';
 import {
   Bus,
   TrendingUp,
@@ -33,14 +34,12 @@ export function BusAnalyticsPage() {
       try {
         setLoading(true);
         const filters: Record<string, any> = { portal: 'bus' };
-        if (isBusIncharge && user?.bus_number) {
-          filters.bus_number = user.bus_number;
-        } else if (effectiveBusNumber) {
+        if (effectiveBusNumber) {
           filters.bus_number = effectiveBusNumber;
         }
         const data = await fetchFeedback(filters);
         const scoped = effectiveBusNumber
-          ? data.filter(f => !f.bus_number || f.bus_number.trim().toLowerCase() === effectiveBusNumber.trim().toLowerCase())
+          ? data.filter(f => isMatchingBus(f.bus_number, effectiveBusNumber))
           : data;
         if (mounted) setFeedback(scoped);
       } finally {
@@ -76,7 +75,7 @@ export function BusAnalyticsPage() {
             Bus Transport Insights
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Sentiment, category distribution, and punctuality performance for {isBusIncharge ? userBusNumber : effectiveBusNumber ? `${effectiveBusNumber} only` : 'all bus routes'}.
+            Sentiment, category distribution, and punctuality performance for {effectiveBusNumber ? `${formatBusDisplay(effectiveBusNumber)} only` : 'all bus routes'}.
           </p>
         </div>
 

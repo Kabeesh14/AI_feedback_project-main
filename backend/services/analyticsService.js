@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { buildBusNumberSql, isMatchingBus } = require('../utils/busUtils');
 
 const OFFICIAL_DEPARTMENTS = [
   'Information Technology',
@@ -81,9 +82,10 @@ function buildDeptClause(department, tablePrefix = '', filters = {}) {
   if (portal === 'bus') {
     let clause = ` AND ${prefix}portal = 'bus'`;
     const params = [];
-    if (busNumber) {
-      clause += ` AND ${prefix}bus_number = ?`;
-      params.push(busNumber);
+    if (busNumber && String(busNumber).toUpperCase() !== 'ALL') {
+      const { clause: busClause, params: bParams } = buildBusNumberSql(`${prefix}bus_number`, busNumber);
+      clause += ` AND ${busClause}`;
+      params.push(...bParams);
     }
     return { clause, params, department: busNumber || 'Bus Transport' };
   }
@@ -778,7 +780,7 @@ async function getIssueAnalytics(department = null, filters = {}) {
  * Aggregated contributing factors with calibrated confidence and evidence
  */
 async function getRootCauseAnalytics(department = null, filters = {}) {
-  const { clause, params, department: deptName } = buildDeptClause(department, 'i');
+  const { clause, params, department: deptName } = buildDeptClause(department, 'i', filters);
   const queryParams = [...params];
 
   let extraWhere = '';
