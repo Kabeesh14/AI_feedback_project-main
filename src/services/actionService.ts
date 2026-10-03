@@ -88,6 +88,22 @@ export async function fetchActions(dept?: string | null, filters: Record<string,
 }
 
 /**
+ * Resolve Bus Incharge name dynamically for a specific bus number
+ */
+export async function fetchBusIncharge(busNumber: string): Promise<{ name: string; email?: string; bus_number?: string; found: boolean }> {
+  try {
+    const res = await apiClient.get(`/bus/incharge/${encodeURIComponent(busNumber)}`);
+    if (res.success && res.data) {
+      return res.data;
+    }
+    return { name: `Bus ${busNumber} Incharge`, found: false };
+  } catch (err) {
+    console.warn('[actionService.fetchBusIncharge failed]:', err);
+    return { name: `Bus ${busNumber} Incharge`, found: false };
+  }
+}
+
+/**
  * Fetch single action by ID from backend /api/actions/:id
  */
 export async function fetchActionById(id: string): Promise<Action | null> {
@@ -106,7 +122,7 @@ export async function fetchActionById(id: string): Promise<Action | null> {
 /**
  * Create corrective action in backend /api/actions
  */
-export async function createAction(action: Omit<Action, 'id' | 'createdAt'>): Promise<Action> {
+export async function createAction(action: Omit<Action, 'id' | 'createdAt'> & { feedbackId?: number }): Promise<Action> {
   const payload: Record<string, any> = {
     title: action.action,
     action: action.action,
@@ -124,6 +140,7 @@ export async function createAction(action: Omit<Action, 'id' | 'createdAt'>): Pr
   if (action.portal) payload.portal = action.portal;
   if (action.bus_number) payload.bus_number = action.bus_number;
   if (action.floor) payload.floor = action.floor;
+  if ((action as any).feedbackId) payload.feedbackId = (action as any).feedbackId;
 
   try {
     const res = await apiClient.post('/actions', payload);

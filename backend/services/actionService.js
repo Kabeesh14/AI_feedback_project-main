@@ -185,6 +185,19 @@ async function createAction(data, user) {
     `, [issueId]);
   }
 
+  // Update feedback status if linked
+  const feedbackId = data.feedbackId || data.feedback_id;
+  if (feedbackId) {
+    await pool.query(`
+      UPDATE feedback 
+      SET status = CASE 
+        WHEN status IN ('submitted', 'new', 'received', 'under_review') THEN 'action_planned' 
+        ELSE status 
+      END
+      WHERE id = ?
+    `, [feedbackId]);
+  }
+
   // Write initial progress update in action_updates audit trail
   const initialUpdate = updateText || `Action created and assigned to ${assignedTo || 'Unassigned'}.`;
   await pool.query(`

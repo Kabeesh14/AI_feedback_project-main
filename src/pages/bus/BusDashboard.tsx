@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card, Badge, StatusBadge, SentimentBadge, Button } from '@/components/common/UI';
 import { AnimatedCounter } from '@/components/common/AnimatedCounter';
@@ -11,6 +11,8 @@ import { fetchFeedback } from '@/services/feedbackService';
 import { isMatchingBus, formatBusDisplay } from '@/utils/busUtils';
 import { fetchIssues } from '@/services/issueService';
 import { fetchActions } from '@/services/actionService';
+import { uploadImage } from '@/services/uploadService';
+import { RequiredActionModal } from '@/components/bus/RequiredActionModal';
 import {
   Bus,
   MapPin,
@@ -28,7 +30,9 @@ import {
   Loader2,
   Users,
   Eye,
-  Camera
+  Camera,
+  CheckSquare,
+  Upload
 } from 'lucide-react';
 import { ImageLightboxModal } from '@/components/common/ImageUpload';
 
@@ -42,6 +46,37 @@ export function BusDashboard() {
   const [actionsList, setActionsList] = useState<Action[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedImageFeedback, setSelectedImageFeedback] = useState<Feedback | null>(null);
+  const [requiredActionFeedback, setRequiredActionFeedback] = useState<Feedback | null>(null);
+  const [uploadTargetFeedback, setUploadTargetFeedback] = useState<Feedback | null>(null);
+  const [uploadingFeedbackId, setUploadingFeedbackId] = useState<string | null>(null);
+  const [actionSuccessNotice, setActionSuccessNotice] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleTriggerUpload = (fb: Feedback) => {
+    setUploadTargetFeedback(fb);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadTargetFeedback) return;
+    try {
+      setUploadingFeedbackId(uploadTargetFeedback.id);
+      const result = await uploadImage(file);
+      if (result.url) {
+        setFeedbackList(prev => prev.map(f => f.id === uploadTargetFeedback.id ? { ...f, imageUrl: result.url, image_url: result.url } : f));
+      }
+    } catch (err) {
+      console.error('[Upload image error]:', err);
+      alert('Failed to upload image evidence.');
+    } finally {
+      setUploadingFeedbackId(null);
+      setUploadTargetFeedback(null);
+    }
+  };
 
   const isStudent = user?.role === 'student';
   const isBusIncharge = user?.role === 'bus_incharge';
@@ -271,17 +306,45 @@ export function BusDashboard() {
                         <span className="text-xs font-medium text-slate-300">{fb.category}</span>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        {(fb.imageUrl || fb.image_url) && (
+                        {/* Image buttons: View Image (if image exists) OR Upload Image */}
+                        {(fb.imageUrl || fb.image_url) ? (
                           <button
                             type="button"
                             onClick={() => setSelectedImageFeedback(fb)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-white border border-amber-500/40 hover:border-amber-400 transition-all shadow-sm active:scale-95 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 hover:text-white border border-amber-500/40 hover:border-amber-400 transition-all shadow-sm active:scale-95 cursor-pointer"
                             title="View student uploaded image along with feedback"
                           >
                             <Eye size={12} />
                             <span>View Image</span>
                           </button>
+                        ) : (isTransportIncharge || isManagement) ? (
+                          <button
+                            type="button"
+                            onClick={() => handleTriggerUpload(fb)}
+                            disabled={uploadingFeedbackId === fb.id}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/[0.06] hover:bg-white/10 text-slate-300 hover:text-white border border-white/15 hover:border-white/25 transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-50"
+                            title="Upload image evidence for this feedback"
+                            id={`upload-image-btn-${fb.id}`}
+                          >
+                            {uploadingFeedbackId === fb.id ? <Loader2 size={12} className="animate-spin text-amber-400" /> : <Camera size={12} className="text-amber-400" />}
+                            <span>Upload Image</span>
+                          </button>
+                        ) : null}
+
+                        {/* Required Action Button: for Transport Incharge and Management */}
+                        {(isTransportIncharge || isManagement) && (
+                          <button
+                            type="button"
+                            onClick={() => setRequiredActionFeedback(fb)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-amber-500/25 to-amber-600/25 hover:from-amber-500/40 hover:to-amber-600/40 text-amber-300 hover:text-white border border-amber-500/40 hover:border-amber-400 transition-all shadow-sm active:scale-95 cursor-pointer"
+                            title="Open Required Action workflow for this feedback"
+                            id={`required-action-btn-${fb.id}`}
+                          >
+                            <CheckSquare size={13} className="text-amber-400" />
+                            <span>Required Action</span>
+                          </button>
                         )}
+
                         <SentimentBadge sentiment={fb.sentiment} />
                         <StatusBadge status={fb.status} />
                       </div>
@@ -381,6 +444,52 @@ export function BusDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Hidden file input for uploading photo evidence to feedback */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelected}
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+      />
+
+      {/* Required Action Modal */}
+      {requiredActionFeedback && (
+        <RequiredActionModal
+          isOpen={Boolean(requiredActionFeedback)}
+          onClose={() => setRequiredActionFeedback(null)}
+          feedback={requiredActionFeedback}
+          onActionCreated={(newAction) => {
+            setActionsList(prev => [newAction, ...prev]);
+            setFeedbackList(prev =>
+              prev.map(f => f.id === requiredActionFeedback.id ? { ...f, status: 'action_planned' as any } : f)
+            );
+            setActionSuccessNotice(`Required Action created for Bus ${newAction.bus_number || 'All'}: "${newAction.action}"`);
+            setTimeout(() => setActionSuccessNotice(null), 6000);
+          }}
+        />
+      )}
+
+      {/* Action Created Success Toast Notification */}
+      {actionSuccessNotice && (
+        <div className="fixed bottom-6 right-6 z-50 p-4 rounded-2xl bg-slate-900/95 border border-emerald-500/50 shadow-2xl backdrop-blur-xl flex items-center gap-3 animate-in slide-in-from-bottom-5 text-sm text-white max-w-md">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+            <ShieldCheck size={20} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-white text-xs uppercase tracking-wider text-emerald-400">Action Registered</p>
+            <p className="text-xs text-slate-300 truncate mt-0.5">{actionSuccessNotice}</p>
+          </div>
+          <Link
+            to="/bus/actions"
+            className="ml-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/40 transition-colors flex items-center gap-1 shrink-0"
+          >
+            <span>Bus Actions</span>
+            <ArrowRight size={12} />
+          </Link>
+        </div>
+      )}
 
       {/* Lightbox Modal for viewing student feedback photo & details */}
       {selectedImageFeedback && (
