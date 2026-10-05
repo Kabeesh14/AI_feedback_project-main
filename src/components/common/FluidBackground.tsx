@@ -78,7 +78,6 @@ function runFluidSimulation(canvas: HTMLCanvasElement): () => void {
   }
 
   const pointers: Pointer[] = [new Pointer()];
-  const splatStack: number[] = [];
   const bloomFramebuffers: any[] = [];
 
   const params = { alpha: true, depth: false, stencil: false, antialias: false, preserveDrawingBuffer: false };
@@ -87,7 +86,7 @@ function runFluidSimulation(canvas: HTMLCanvasElement): () => void {
   if (!gl) {
     gl = (canvas.getContext('webgl', params) || canvas.getContext('experimental-webgl', params)) as any;
   }
-  if (!gl) return () => {};
+  if (!gl) return () => { };
 
   let halfFloat: any;
   let supportLinearFiltering: any;
@@ -631,12 +630,13 @@ function runFluidSimulation(canvas: HTMLCanvasElement): () => void {
     return { r, g, b };
   }
 
+  let colorCycle = 0.55;
   function generateColor() {
-    const h = 0.5 + Math.random() * 0.42;
-    const c = HSVtoRGB(h, 0.95, 1.0);
-    c.r *= 0.92;
-    c.g *= 0.92;
-    c.b *= 0.92;
+    colorCycle = (colorCycle + 0.035) % 1.0;
+    const c = HSVtoRGB(colorCycle, 0.95, 1.0);
+    c.r *= 2.8;
+    c.g *= 2.8;
+    c.b *= 2.8;
     return c;
   }
 
@@ -658,70 +658,13 @@ function runFluidSimulation(canvas: HTMLCanvasElement): () => void {
     density.swap();
   }
 
-  function multipleSplats(amount: number) {
-    for (let i = 0; i < amount; i++) {
-      const color = generateColor();
-      color.r *= 10.0;
-      color.g *= 10.0;
-      color.b *= 10.0;
-      const x = canvas.width * Math.random();
-      const y = canvas.height * Math.random();
-      const dx = 1000 * (Math.random() - 0.5);
-      const dy = 1000 * (Math.random() - 0.5);
-      splat(x, y, dx, dy, color);
-    }
-  }
-
   initFramebuffers();
-  multipleSplats(34);
-  for (let i = 0; i < 8; i++) splatStack.push(10 + Math.floor(Math.random() * 10));
 
   let lastColorChangeTime = Date.now();
-  let virtualSeeded = false;
-  let orbitAngle = 0;
-  let vPrevX = 0, vPrevY = 0;
-  let virtualColor: any = null;
-  let lastVColorTime = 0;
-  const engineStart = Date.now();
-  const ORBIT_RADIUS = 300;
-  const ORBIT_SPEED = 0.026;
-  const ORBIT_START_DELAY = 700;
-
   let rafHandle = 0;
   let isDestroyed = false;
 
-  function driveVirtualPointer() {
-    if (Date.now() - engineStart < ORBIT_START_DELAY) return;
-    const cx = canvas.width / 2;
-    const cy = canvas.height / 2;
-    const base = Math.min(ORBIT_RADIUS, canvas.width * 0.35, canvas.height * 0.35);
-    const r = base * (0.72 + 0.28 * Math.sin(orbitAngle * 0.37));
-    orbitAngle += ORBIT_SPEED;
-    const x = cx + Math.cos(orbitAngle) * r;
-    const y = cy + Math.sin(orbitAngle) * r;
-    if (!virtualSeeded) {
-      virtualSeeded = true;
-      vPrevX = x;
-      vPrevY = y;
-      return;
-    }
-    if (!virtualColor || Date.now() - lastVColorTime > 120) {
-      virtualColor = generateColor();
-      virtualColor.r *= 3.2;
-      virtualColor.g *= 3.2;
-      virtualColor.b *= 3.2;
-      lastVColorTime = Date.now();
-    }
-    const dx = (x - vPrevX) * 9.0;
-    const dy = (y - vPrevY) * 9.0;
-    vPrevX = x;
-    vPrevY = y;
-    splat(x, y, dx, dy, virtualColor);
-  }
-
   function input() {
-    if (splatStack.length > 0) multipleSplats(splatStack.pop()!);
-
     for (let i = 0; i < pointers.length; i++) {
       const p = pointers[i];
       if (p.moved) {
@@ -859,8 +802,25 @@ function runFluidSimulation(canvas: HTMLCanvasElement): () => void {
     }
     p.down = true;
     p.moved = true;
-    p.dx = (x - p.x) * 5.0;
-    p.dy = (y - p.y) * 5.0;
+    const rawDx = (x - p.x) * 5.0;
+    const rawDy = (y - p.y) * 5.0;
+    const speed = Math.hypot(rawDx, rawDy);
+    const factor = speed < 8 && speed > 0 ? 8 / speed : 1.0;
+    p.dx = Math.max(-150, Math.min(150, rawDx * factor));
+    p.dy = Math.max(-150, Math.min(150, rawDy * factor));
+    p.x = x;
+    p.y = y;
+    p.color = generateColor();
+  });
+
+  on(window, 'mousedown', (e: MouseEvent) => {
+    const { x, y } = pointerPos(e.clientX, e.clientY);
+    const p = pointers[0];
+    p.everMoved = true;
+    p.down = true;
+    p.moved = true;
+    p.dx = (Math.random() - 0.5) * 50;
+    p.dy = (Math.random() - 0.5) * 50;
     p.x = x;
     p.y = y;
     p.color = generateColor();
@@ -875,10 +835,13 @@ function runFluidSimulation(canvas: HTMLCanvasElement): () => void {
       p.down = true;
       p.moved = p.everMoved === true;
       p.everMoved = true;
-      p.dx = (x - p.x) * 8.0;
-      p.dy = (y - p.y) * 8.0;
+      const rawDx = (x - p.x) * 8.0;
+      const rawDy = (y - p.y) * 8.0;
+      p.dx = Math.max(-180, Math.min(180, rawDx));
+      p.dy = Math.max(-180, Math.min(180, rawDy));
       p.x = x;
       p.y = y;
+      p.color = generateColor();
     }
   }, { passive: true });
 
@@ -899,7 +862,6 @@ function runFluidSimulation(canvas: HTMLCanvasElement): () => void {
   function update() {
     if (isDestroyed) return;
     resizeCanvas();
-    driveVirtualPointer();
     input();
     if (!config.PAUSED) step(0.016);
     render(null);
