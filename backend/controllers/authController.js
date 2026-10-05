@@ -555,6 +555,11 @@ function googleAuth(req, res) {
   const callbackUrl = (process.env.GOOGLE_CALLBACK_URL || `${req.protocol}://${req.get('host')}/api/auth/google/callback`).trim();
   const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim();
 
+  // Enforce: Only students can use Google OAuth
+  if (role !== 'student') {
+    return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent('Google sign-in is exclusively available for student accounts. Staff, faculty, and administrators must sign in with their email and password.')}`);
+  }
+
   if (!clientId || !clientSecret) {
     return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent('Google OAuth configuration is missing on the server (GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are required).')}`);
   }
@@ -597,6 +602,11 @@ async function googleCallback(req, res) {
     } catch (e) {
       console.warn('[AUTH GOOGLE] Could not parse OAuth state:', e.message);
     }
+  }
+
+  // Enforce: Only students can complete Google authentication
+  if (requestedRole !== 'student') {
+    return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent('Google sign-in is exclusively available for student accounts. Staff, faculty, and administrators must sign in with their email and password.')}`);
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID ? process.env.GOOGLE_CLIENT_ID.trim() : '';
@@ -647,6 +657,12 @@ async function googleCallback(req, res) {
     // Existing account found in database
     if (rows.length > 0) {
       const user = rows[0];
+
+      // Enforce: Only student accounts can log in via Google
+      if (user.role !== 'student') {
+        const errorMsg = 'Google sign-in is exclusively available for student accounts. Staff, faculty, and administrators must sign in with their email and password.';
+        return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(errorMsg)}`);
+      }
 
       // Role mismatch check: compare requested Google-login role vs stored user.role
       if (user.role !== requestedRole) {
