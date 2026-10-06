@@ -221,7 +221,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col justify-between overflow-x-hidden">
+    <div className="relative min-h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col overflow-x-hidden">
       
       {/* 100vw × 100vh FULL-SCREEN CLASSROOM BACKGROUND IMAGE */}
       <div
@@ -233,17 +233,17 @@ export function LoginPage() {
       <div className="fixed inset-0 w-full h-full bg-slate-950/30 dark:bg-slate-950/35 backdrop-blur-[1px] z-10 pointer-events-none" />
 
       {/* PAGE CONTENT ABOVE FULL-SCREEN BACKGROUND */}
-      <div className="relative z-20 flex-1 flex flex-col justify-between min-h-screen">
+      <div className="relative z-20 flex-1 flex flex-col w-full">
 
         {/* Translucent Glass Top Navbar */}
-        <header className="px-6 py-4 border-b border-white/10 bg-slate-950/40 backdrop-blur-xl sticky top-0 z-30">
+        <header className="w-full px-6 py-3.5 border-b border-white/10 bg-slate-950/50 backdrop-blur-xl sticky top-0 z-30">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
-                <Sparkles size={20} className="text-white" />
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
+                <Sparkles size={18} className="text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-white leading-none">FEEDBACKIQ</h1>
+                <h1 className="text-base font-bold text-white leading-none">FEEDBACKIQ</h1>
                 <p className="text-[10px] font-semibold text-slate-300 uppercase tracking-widest mt-0.5">
                   {selectedPortal.toUpperCase()} PORTAL
                 </p>
@@ -261,17 +261,17 @@ export function LoginPage() {
               </Link>
               <button
                 onClick={toggleTheme}
-                className="p-2.5 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 text-white transition-colors backdrop-blur-md"
+                className="p-2 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 text-white transition-colors backdrop-blur-md"
                 title="Toggle color theme"
               >
-                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
               </button>
             </div>
           </div>
         </header>
 
         {/* Main Content Area: Floating Glassmorphism Login Card */}
-        <main className="flex-1 flex items-center justify-center lg:justify-end max-w-7xl mx-auto w-full px-4 sm:px-6 py-10 lg:py-16">
+        <main className="flex-1 flex items-center justify-center lg:justify-end max-w-7xl mx-auto w-full px-4 sm:px-6 py-4 sm:py-8 lg:py-10">
           
           {/* FLOATING GLASSMORPHISM CARD */}
           <div className="w-full max-w-lg rounded-3xl bg-slate-900/60 backdrop-blur-2xl border border-white/15 shadow-2xl shadow-black/80 p-7 sm:p-9 text-slate-100">
@@ -540,7 +540,7 @@ export function LoginPage() {
         </main>
 
         {/* Translucent Glass Footer */}
-        <footer className="py-6 px-6 border-t border-white/10 bg-slate-950/40 backdrop-blur-xl text-center text-xs text-slate-300">
+        <footer className="py-3 px-6 border-t border-white/10 bg-slate-950/40 backdrop-blur-xl text-center text-[11px] text-slate-300">
           <p className="font-semibold text-white">FEEDBACKIQ · Institutional Feedback Intelligence Platform</p>
         </footer>
       </div>

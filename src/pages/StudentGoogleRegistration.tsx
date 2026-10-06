@@ -246,7 +246,7 @@ export function StudentGoogleRegistration() {
   };
 
   return (
-    <div className="relative min-h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col justify-between overflow-x-hidden">
+    <div className="relative min-h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col overflow-x-hidden">
       
       {/* 100vw × 100vh FULL-SCREEN BACKGROUND IMAGE */}
       <div
@@ -258,10 +258,10 @@ export function StudentGoogleRegistration() {
       <div className="fixed inset-0 w-full h-full bg-slate-950/35 backdrop-blur-[1px] z-10 pointer-events-none" />
 
       {/* PAGE CONTENT */}
-      <div className="relative z-20 flex-1 flex flex-col justify-between min-h-screen">
+      <div className="relative z-20 flex-1 flex flex-col w-full">
 
         {/* Top Navbar */}
-        <header className="px-6 py-4 border-b border-white/10 bg-slate-950/40 backdrop-blur-xl sticky top-0 z-30">
+        <header className="w-full px-6 py-3.5 border-b border-white/10 bg-slate-950/50 backdrop-blur-xl sticky top-0 z-30">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2.5 group">
               <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
@@ -678,7 +678,7 @@ export function StudentGoogleRegistration() {
         </main>
 
         {/* Translucent Glass Footer */}
-        <footer className="py-6 px-6 border-t border-white/10 bg-slate-950/40 backdrop-blur-xl text-center text-xs text-slate-300">
+        <footer className="py-3 px-6 border-t border-white/10 bg-slate-950/40 backdrop-blur-xl text-center text-[11px] text-slate-300">
           <p className="font-semibold text-white">FEEDBACKIQ · Institutional Feedback Intelligence Platform</p>
         </footer>
 

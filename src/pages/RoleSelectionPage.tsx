@@ -210,7 +210,7 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
   }, [currentPortal]);
 
   return (
-    <div className="relative min-h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col justify-between overflow-x-hidden">
+    <div className="relative min-h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col overflow-x-hidden">
       
       {/* 100vw × 100vh FULL-SCREEN BACKGROUND IMAGE */}
       <div
@@ -222,10 +222,10 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
       <div className="fixed inset-0 w-full h-full bg-slate-950/60 dark:bg-slate-950/75 backdrop-blur-[3px] z-10 pointer-events-none" />
 
       {/* PAGE CONTENT ABOVE FULLSCREEN IMAGE LAYER */}
-      <div className="relative z-20 flex-1 flex flex-col justify-between min-h-screen">
+      <div className="relative z-20 flex-1 flex flex-col w-full">
 
         {/* Translucent Glass Top Header */}
-        <header className="px-6 py-4 flex items-center justify-between border-b border-white/10 bg-slate-950/40 backdrop-blur-xl sticky top-0 z-30">
+        <header className="w-full px-6 py-3.5 flex items-center justify-between border-b border-white/10 bg-slate-950/50 backdrop-blur-xl sticky top-0 z-30">
           <Link to="/" className="flex items-center gap-2.5 group">
             <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
               <Sparkles size={18} className="text-white" />
@@ -251,7 +251,7 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
               className="p-2 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 text-white transition-colors backdrop-blur-md"
               title="Toggle color theme"
             >
-              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+              {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
             </button>
             <Link
               to={`/login?portal=${currentPortal}`}
@@ -263,28 +263,28 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
         </header>
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex-1 flex flex-col justify-center w-full">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5 flex-1 flex flex-col justify-center w-full">
           
           {/* Title Banner */}
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-300 text-xs font-semibold mb-4 backdrop-blur-md">
+          <div className="text-center max-w-2xl mx-auto mb-3 sm:mb-5">
+            <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-300 text-xs font-semibold mb-1.5 backdrop-blur-md">
               <span className="h-2 w-2 rounded-full bg-blue-400 animate-pulse" />
               {portalMeta.badge}
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-3">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-1">
               {currentPortal === 'education' ? (
                 <>Welcome to <span className={`bg-gradient-to-r ${portalMeta.color} bg-clip-text text-transparent`}>FeedbackIQ</span></>
               ) : (
                 <span className={`bg-gradient-to-r ${portalMeta.color} bg-clip-text text-transparent`}>{portalMeta.title}</span>
               )}
             </h1>
-            <p className="text-base text-slate-300 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-300 leading-snug">
               {portalMeta.subtitle}
             </p>
           </div>
 
           {/* Interactive Role Cards with Glassmorphism */}
-          <div className={`grid grid-cols-1 sm:grid-cols-2 ${roleOptions.length === 3 ? 'lg:grid-cols-3 max-w-5xl' : 'lg:grid-cols-4'} gap-6 mb-10 mx-auto w-full`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${roleOptions.length === 3 ? 'lg:grid-cols-3 max-w-5xl' : 'lg:grid-cols-4'} gap-3.5 sm:gap-4 mb-3 sm:mb-4 mx-auto w-full`}>
             {roleOptions.map((option) => {
               const isSelected = selectedRole === option.id;
               const Icon = option.icon;
@@ -293,45 +293,45 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
                 <div
                   key={option.id}
                   onClick={() => setSelectedRole(option.id)}
-                  className={`relative flex flex-col justify-between rounded-3xl p-6 sm:p-7 border-2 transition-all duration-300 cursor-pointer group backdrop-blur-xl ${
+                  className={`relative flex flex-col justify-between rounded-2xl sm:rounded-3xl p-4 sm:p-5 border-2 transition-all duration-300 cursor-pointer group backdrop-blur-xl ${
                     isSelected
-                      ? 'border-blue-500 bg-slate-900/80 shadow-2xl shadow-blue-500/20 -translate-y-1.5'
-                      : 'border-white/15 bg-slate-900/60 hover:border-white/30 hover:-translate-y-1 hover:shadow-xl'
+                      ? 'border-blue-500 bg-slate-900/80 shadow-2xl shadow-blue-500/20 -translate-y-1'
+                      : 'border-white/15 bg-slate-900/60 hover:border-white/30 hover:-translate-y-0.5 hover:shadow-xl'
                   }`}
                 >
                   {/* Selected Indicator */}
                   {isSelected && (
-                    <div className="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-600 text-white text-[11px] font-bold shadow-md animate-in fade-in zoom-in-95 duration-200">
-                      <CheckCircle2 size={13} />
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold shadow-md animate-in fade-in zoom-in-95 duration-200">
+                      <CheckCircle2 size={12} />
                       Selected
                     </div>
                   )}
 
                   <div>
                     {/* Icon Header */}
-                    <div className="flex items-center gap-3 mb-5">
+                    <div className="flex items-center gap-2.5 mb-2.5">
                       <div
-                        className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${option.gradient} flex items-center justify-center shadow-lg text-white transition-transform duration-300 group-hover:scale-110 flex-shrink-0`}
+                        className={`h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-br ${option.gradient} flex items-center justify-center shadow-lg text-white transition-transform duration-300 group-hover:scale-105 flex-shrink-0`}
                       >
-                        <Icon size={26} />
+                        <Icon size={22} />
                       </div>
                       <div>
-                        <span className="text-2xl">{option.emoji}</span>
-                        <h2 className="text-lg font-bold text-white leading-tight">{option.title}</h2>
-                        <p className="text-[11px] font-medium text-slate-300">{option.badge}</p>
+                        <span className="text-lg leading-none">{option.emoji}</span>
+                        <h2 className="text-base sm:text-lg font-bold text-white leading-tight">{option.title}</h2>
+                        <p className="text-[10px] font-medium text-slate-300">{option.badge}</p>
                       </div>
                     </div>
 
                     {/* Description */}
-                    <p className="text-xs sm:text-sm text-slate-300 mb-6 leading-relaxed">
+                    <p className="text-xs text-slate-300 mb-2.5 leading-relaxed line-clamp-2 sm:line-clamp-3">
                       {option.description}
                     </p>
 
                     {/* Feature Checklist */}
-                    <div className="space-y-2.5 mb-8 border-t border-white/10 pt-4">
+                    <div className="space-y-1 mb-3.5 border-t border-white/10 pt-2.5">
                       {option.features.map((feat, i) => (
-                        <div key={i} className="flex items-start gap-2 text-xs text-slate-300">
-                          <ShieldCheck size={14} className="text-blue-400 flex-shrink-0 mt-0.5" />
+                        <div key={i} className="flex items-start gap-1.5 text-[11px] text-slate-300 leading-tight">
+                          <ShieldCheck size={13} className="text-blue-400 flex-shrink-0 mt-0.5" />
                           <span>{feat}</span>
                         </div>
                       ))}
@@ -345,14 +345,14 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
                       e.stopPropagation();
                       handleContinue(option.id);
                     }}
-                    className={`w-full py-3.5 px-4 rounded-2xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.98] ${
+                    className={`w-full py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.98] ${
                       isSelected
                         ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30'
                         : 'bg-white/10 hover:bg-blue-600 text-white border border-white/10'
                     }`}
                   >
                     <span>{option.ctaText}</span>
-                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
               );
@@ -360,25 +360,25 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
           </div>
 
           {/* Quick Action Navigation Bar */}
-          <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-white/15 p-4 text-center text-xs text-slate-300 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 max-w-4xl mx-auto w-full">
+          <div className="bg-slate-900/60 backdrop-blur-xl rounded-xl sm:rounded-2xl border border-white/15 p-2 sm:p-2.5 text-center text-xs text-slate-300 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-2 max-w-4xl mx-auto w-full mb-1.5">
             <Link
               to="/portal-selection"
-              className="text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors font-medium"
+              className="text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors font-medium text-xs"
             >
-              <ArrowLeft size={14} />
-              <span>← Back to Portal Selection</span>
+              <ArrowLeft size={13} />
+              <span>Back to Portal Selection</span>
             </Link>
             <button
               onClick={() => handleContinue(selectedRole)}
-              className="text-blue-400 font-bold hover:underline flex items-center gap-1"
+              className="text-blue-400 font-bold hover:underline flex items-center gap-1 text-xs"
             >
-              Enter with {selectedRole.toUpperCase()} Role <ArrowRight size={14} />
+              Enter with {selectedRole.toUpperCase()} Role <ArrowRight size={13} />
             </button>
           </div>
         </main>
 
         {/* Footer */}
-        <footer className="py-6 px-6 border-t border-white/10 bg-slate-950/40 backdrop-blur-xl text-center text-xs text-slate-300">
+        <footer className="py-2.5 px-6 border-t border-white/10 bg-slate-950/40 backdrop-blur-xl text-center text-[11px] text-slate-300">
           <p className="font-semibold text-white">FEEDBACKIQ · Institutional Feedback Intelligence Platform</p>
         </footer>
       </div>
