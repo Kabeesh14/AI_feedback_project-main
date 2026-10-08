@@ -15,13 +15,10 @@ import {
   AlertCircle,
   Loader2,
   ChevronDown,
-  Sun,
-  Moon,
   Bus,
   Home,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { useTheme } from '@/context/ThemeContext';
 import {
   OFFICIAL_DEPARTMENTS,
   OFFICIAL_YEARS,
@@ -97,7 +94,6 @@ export function StudentGoogleRegistration() {
   const regToken = searchParams.get('regToken');
 
   const { loginWithToken } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   // Safely decode verified Google profile and requested role for read-only preview
@@ -246,9 +242,9 @@ export function StudentGoogleRegistration() {
   };
 
   return (
-    <div className="relative min-h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col overflow-x-hidden">
+    <div className="relative h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col justify-between overflow-hidden">
       
-      {/* 100vw × 100vh FULL-SCREEN BACKGROUND IMAGE */}
+      {/* 100vw × 100vh FIXED FULL-SCREEN BACKGROUND IMAGE */}
       <div
         className="fixed inset-0 w-full h-full bg-cover bg-center z-0 pointer-events-none"
         style={{ backgroundImage: `url(${loginClassroom})` }}
@@ -257,11 +253,11 @@ export function StudentGoogleRegistration() {
       {/* TRANSLUCENT OVERLAY */}
       <div className="fixed inset-0 w-full h-full bg-slate-950/35 backdrop-blur-[1px] z-10 pointer-events-none" />
 
-      {/* PAGE CONTENT */}
-      <div className="relative z-20 flex-1 flex flex-col w-full">
+      {/* FIXED PAGE CONTENT WRAPPER */}
+      <div className="relative z-20 flex flex-col justify-between h-screen w-full overflow-hidden">
 
-        {/* Top Navbar */}
-        <header className="w-full px-6 py-3.5 border-b border-white/10 bg-slate-950/50 backdrop-blur-xl sticky top-0 z-30">
+        {/* Fixed Glass Top Navbar */}
+        <header className="flex-shrink-0 px-6 py-3.5 border-b border-white/10 bg-slate-950/40 backdrop-blur-xl z-30">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2.5 group">
               <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
@@ -283,20 +279,12 @@ export function StudentGoogleRegistration() {
                 <ArrowLeft size={14} />
                 <span>Back to Login</span>
               </Link>
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all"
-                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-              >
-                {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
-              </button>
             </div>
           </div>
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
+        <main className="flex-1 flex items-center justify-center px-4 py-3 sm:py-6 min-h-0 overflow-y-auto">
           <div className="w-full max-w-lg rounded-3xl border border-white/15 bg-slate-900/60 backdrop-blur-2xl shadow-2xl p-6 sm:p-9 text-slate-100 relative">
             
             {/* Header Badge */}
@@ -678,7 +666,7 @@ export function StudentGoogleRegistration() {
         </main>
 
         {/* Translucent Glass Footer */}
-        <footer className="py-3 px-6 border-t border-white/10 bg-slate-950/40 backdrop-blur-xl text-center text-[11px] text-slate-300">
+        <footer className="flex-shrink-0 py-3 px-6 border-t border-white/10 bg-slate-950/40 backdrop-blur-xl text-center text-xs text-slate-300">
           <p className="font-semibold text-white">FEEDBACKIQ · Institutional Feedback Intelligence Platform</p>
         </footer>
 

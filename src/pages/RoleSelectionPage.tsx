@@ -9,12 +9,9 @@ import {
   Sparkles,
   CheckCircle2,
   ShieldCheck,
-  Sun,
-  Moon,
   Bus,
   Home,
 } from 'lucide-react';
-import { useTheme } from '@/context/ThemeContext';
 import landingClassroom from '@/assets/landing-classroom.jpg';
 import type { Role, PortalType } from '@/types';
 
@@ -177,7 +174,6 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
 
   const initialRole = (searchParams.get('selected') as Role) || roleOptions[0].id;
   const [selectedRole, setSelectedRole] = useState<Role>(initialRole);
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleContinue = (role: Role) => {
@@ -210,22 +206,22 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
   }, [currentPortal]);
 
   return (
-    <div className="relative min-h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col overflow-x-hidden">
+    <div className="relative h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col justify-between overflow-hidden">
       
-      {/* 100vw × 100vh FULL-SCREEN BACKGROUND IMAGE */}
+      {/* 100vw × 100vh FIXED FULL-SCREEN BACKGROUND IMAGE */}
       <div
         className="fixed inset-0 w-full h-full bg-cover bg-center z-0 pointer-events-none"
         style={{ backgroundImage: `url(${landingClassroom})` }}
       />
 
       {/* SOFT TRANSLUCENT OVERLAY */}
-      <div className="fixed inset-0 w-full h-full bg-slate-950/60 dark:bg-slate-950/75 backdrop-blur-[3px] z-10 pointer-events-none" />
+      <div className="fixed inset-0 w-full h-full bg-slate-950/60 backdrop-blur-[3px] z-10 pointer-events-none" />
 
-      {/* PAGE CONTENT ABOVE FULLSCREEN IMAGE LAYER */}
-      <div className="relative z-20 flex-1 flex flex-col w-full">
+      {/* FIXED PAGE CONTENT WRAPPER */}
+      <div className="relative z-20 flex flex-col justify-between h-screen w-full overflow-hidden">
 
-        {/* Translucent Glass Top Header */}
-        <header className="w-full px-6 py-3.5 flex items-center justify-between border-b border-white/10 bg-slate-950/50 backdrop-blur-xl sticky top-0 z-30">
+        {/* Fixed Glass Top Header */}
+        <header className="flex-shrink-0 px-6 py-3.5 flex items-center justify-between border-b border-white/10 bg-slate-950/50 backdrop-blur-xl z-30">
           <Link to="/" className="flex items-center gap-2.5 group">
             <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
               <Sparkles size={18} className="text-white" />
@@ -246,13 +242,6 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
               <ArrowLeft size={14} />
               <span>Back to Portal Selection</span>
             </Link>
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 text-white transition-colors backdrop-blur-md"
-              title="Toggle color theme"
-            >
-              {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
-            </button>
             <Link
               to={`/login?portal=${currentPortal}`}
               className="text-xs font-semibold text-white hover:text-blue-300 px-3 py-2 rounded-lg transition-colors"
@@ -263,28 +252,28 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
         </header>
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5 flex-1 flex flex-col justify-center w-full">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 sm:py-4 flex-1 flex flex-col justify-center items-center w-full min-h-0 overflow-y-auto lg:overflow-visible">
           
           {/* Title Banner */}
-          <div className="text-center max-w-2xl mx-auto mb-3 sm:mb-5">
-            <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-300 text-xs font-semibold mb-1.5 backdrop-blur-md">
+          <div className="text-center max-w-2xl mx-auto mb-3 sm:mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-300 text-xs font-semibold mb-2 backdrop-blur-md">
               <span className="h-2 w-2 rounded-full bg-blue-400 animate-pulse" />
               {portalMeta.badge}
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-1.5">
               {currentPortal === 'education' ? (
                 <>Welcome to <span className={`bg-gradient-to-r ${portalMeta.color} bg-clip-text text-transparent`}>FeedbackIQ</span></>
               ) : (
                 <span className={`bg-gradient-to-r ${portalMeta.color} bg-clip-text text-transparent`}>{portalMeta.title}</span>
               )}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 leading-snug">
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl mx-auto">
               {portalMeta.subtitle}
             </p>
           </div>
 
           {/* Interactive Role Cards with Glassmorphism */}
-          <div className={`grid grid-cols-1 sm:grid-cols-2 ${roleOptions.length === 3 ? 'lg:grid-cols-3 max-w-5xl' : 'lg:grid-cols-4'} gap-3.5 sm:gap-4 mb-3 sm:mb-4 mx-auto w-full`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${roleOptions.length === 3 ? 'lg:grid-cols-3 max-w-5xl' : 'lg:grid-cols-4 max-w-7xl'} gap-4 sm:gap-5 mb-3 sm:mb-4 mx-auto w-full`}>
             {roleOptions.map((option) => {
               const isSelected = selectedRole === option.id;
               const Icon = option.icon;
@@ -301,7 +290,7 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
                 >
                   {/* Selected Indicator */}
                   {isSelected && (
-                    <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold shadow-md animate-in fade-in zoom-in-95 duration-200">
+                    <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold shadow-md animate-in fade-in zoom-in-95 duration-200">
                       <CheckCircle2 size={12} />
                       Selected
                     </div>
@@ -309,29 +298,29 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
 
                   <div>
                     {/* Icon Header */}
-                    <div className="flex items-center gap-2.5 mb-2.5">
+                    <div className="flex items-center gap-3 mb-3">
                       <div
-                        className={`h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-gradient-to-br ${option.gradient} flex items-center justify-center shadow-lg text-white transition-transform duration-300 group-hover:scale-105 flex-shrink-0`}
+                        className={`h-12 w-12 sm:h-13 sm:w-13 rounded-xl sm:rounded-2xl bg-gradient-to-br ${option.gradient} flex items-center justify-center shadow-lg text-white transition-transform duration-300 group-hover:scale-105 flex-shrink-0`}
                       >
-                        <Icon size={22} />
+                        <Icon size={24} />
                       </div>
                       <div>
-                        <span className="text-lg leading-none">{option.emoji}</span>
+                        <span className="text-2xl">{option.emoji}</span>
                         <h2 className="text-base sm:text-lg font-bold text-white leading-tight">{option.title}</h2>
-                        <p className="text-[10px] font-medium text-slate-300">{option.badge}</p>
+                        <p className="text-[11px] font-medium text-slate-300">{option.badge}</p>
                       </div>
                     </div>
 
                     {/* Description */}
-                    <p className="text-xs text-slate-300 mb-2.5 leading-relaxed line-clamp-2 sm:line-clamp-3">
+                    <p className="text-xs text-slate-300 mb-3 leading-relaxed">
                       {option.description}
                     </p>
 
                     {/* Feature Checklist */}
-                    <div className="space-y-1 mb-3.5 border-t border-white/10 pt-2.5">
+                    <div className="space-y-1.5 mb-4 border-t border-white/10 pt-3">
                       {option.features.map((feat, i) => (
-                        <div key={i} className="flex items-start gap-1.5 text-[11px] text-slate-300 leading-tight">
-                          <ShieldCheck size={13} className="text-blue-400 flex-shrink-0 mt-0.5" />
+                        <div key={i} className="flex items-start gap-2 text-xs text-slate-300">
+                          <ShieldCheck size={14} className="text-blue-400 flex-shrink-0 mt-0.5" />
                           <span>{feat}</span>
                         </div>
                       ))}
@@ -345,7 +334,7 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
                       e.stopPropagation();
                       handleContinue(option.id);
                     }}
-                    className={`w-full py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.98] ${
+                    className={`w-full py-2.5 sm:py-3 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.98] ${
                       isSelected
                         ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30'
                         : 'bg-white/10 hover:bg-blue-600 text-white border border-white/10'
@@ -360,25 +349,25 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
           </div>
 
           {/* Quick Action Navigation Bar */}
-          <div className="bg-slate-900/60 backdrop-blur-xl rounded-xl sm:rounded-2xl border border-white/15 p-2 sm:p-2.5 text-center text-xs text-slate-300 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-2 max-w-4xl mx-auto w-full mb-1.5">
+          <div className="bg-slate-900/60 backdrop-blur-xl rounded-xl sm:rounded-2xl border border-white/15 p-2.5 sm:p-3 text-center text-xs text-slate-300 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-2.5 max-w-4xl mx-auto w-full">
             <Link
               to="/portal-selection"
               className="text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors font-medium text-xs"
             >
-              <ArrowLeft size={13} />
-              <span>Back to Portal Selection</span>
+              <ArrowLeft size={14} />
+              <span>← Back to Portal Selection</span>
             </Link>
             <button
               onClick={() => handleContinue(selectedRole)}
               className="text-blue-400 font-bold hover:underline flex items-center gap-1 text-xs"
             >
-              Enter with {selectedRole.toUpperCase()} Role <ArrowRight size={13} />
+              Enter with {selectedRole.toUpperCase()} Role <ArrowRight size={14} />
             </button>
           </div>
         </main>
 
         {/* Footer */}
-        <footer className="py-2.5 px-6 border-t border-white/10 bg-slate-950/40 backdrop-blur-xl text-center text-[11px] text-slate-300">
+        <footer className="flex-shrink-0 py-2.5 px-6 border-t border-white/10 bg-slate-950/40 backdrop-blur-xl text-center text-xs text-slate-300 z-30">
           <p className="font-semibold text-white">FEEDBACKIQ · Institutional Feedback Intelligence Platform</p>
         </footer>
       </div>

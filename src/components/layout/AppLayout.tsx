@@ -1,8 +1,7 @@
 import { type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { useTheme } from '@/context/ThemeContext';
-import { Sun, Moon, Search, Bell, LogOut, Menu, X, Sparkles, LayoutDashboard, MessageSquarePlus, History, MessageSquare, Layers, AlertTriangle, GitBranch, BellRing, CheckSquare, FileText, MessageCircle, Activity, Building2, Send, ShieldCheck, Users, TrendingUp, Bus, Home } from 'lucide-react';
+import { Search, Bell, LogOut, Menu, X, Sparkles, LayoutDashboard, MessageSquarePlus, History, MessageSquare, Layers, AlertTriangle, GitBranch, BellRing, CheckSquare, FileText, MessageCircle, Activity, Building2, Send, ShieldCheck, Users, TrendingUp, Bus, Home } from 'lucide-react';
 import { useState } from 'react';
 import type { Role, PortalType } from '@/types';
 import { GlobalSearch } from './GlobalSearch';
@@ -111,7 +110,6 @@ function getNavForRole(role: Role, portal?: string): NavItem[] {
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -241,13 +239,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 </button>
                 {notifOpen && <NotificationDropdown onClose={() => setNotifOpen(false)} />}
               </div>
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] border border-white/10 hover:border-white/20 text-slate-300 hover:text-white transition-all shadow-sm active:scale-95"
-                aria-label="Toggle theme"
-              >
-                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-              </button>
               <div className="hidden sm:flex items-center gap-3 pl-3 ml-1 border-l border-white/10">
                 <div className="text-right">
                   <p className="text-sm font-medium text-white leading-tight">{user.name}</p>
