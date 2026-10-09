@@ -5,7 +5,7 @@ export function Card({ children, className = '', onClick, hover = false }: { chi
   return (
     <div
       onClick={onClick}
-      className={`bg-white/80 dark:bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-lg text-slate-800 dark:text-slate-100 ${
+      className={`bg-white/[0.05] backdrop-blur-xl rounded-2xl border border-white/10 shadow-lg text-slate-100 ${
         hover ? 'transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] hover:border-cyan-400/40 hover:-translate-y-0.5 cursor-pointer' : ''
       } ${className}`}
     >
@@ -16,18 +16,18 @@ export function Card({ children, className = '', onClick, hover = false }: { chi
 
 export function Badge({ children, variant = 'default', className = '' }: { children: ReactNode; variant?: 'default' | 'critical' | 'high' | 'medium' | 'low' | 'positive' | 'negative' | 'neutral' | 'ai' | 'info' | 'success' | 'warning'; className?: string }) {
   const variants: Record<string, string> = {
-    default: 'bg-slate-100 text-slate-600 dark:bg-white/[0.08] dark:text-slate-200 dark:border dark:border-white/10',
-    critical: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300 dark:border dark:border-red-500/25',
-    high: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300 dark:border dark:border-orange-500/25',
-    medium: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 dark:border dark:border-amber-500/25',
-    low: 'bg-blue-100 text-blue-700 dark:bg-cyan-500/15 dark:text-cyan-300 dark:border dark:border-cyan-500/25',
-    positive: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border dark:border-emerald-500/25',
-    negative: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300 dark:border dark:border-red-500/25',
-    neutral: 'bg-slate-100 text-slate-600 dark:bg-white/[0.08] dark:text-slate-300 dark:border dark:border-white/10',
-    ai: 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300 dark:border dark:border-violet-500/30',
-    info: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 dark:border dark:border-blue-500/25',
-    success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border dark:border-emerald-500/25',
-    warning: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 dark:border dark:border-amber-500/25',
+    default: 'bg-white/[0.08] text-slate-200 border border-white/10',
+    critical: 'bg-red-500/15 text-red-300 border border-red-500/25',
+    high: 'bg-orange-500/15 text-orange-300 border border-orange-500/25',
+    medium: 'bg-amber-500/15 text-amber-300 border border-amber-500/25',
+    low: 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/25',
+    positive: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25',
+    negative: 'bg-red-500/15 text-red-300 border border-red-500/25',
+    neutral: 'bg-white/[0.08] text-slate-300 border border-white/10',
+    ai: 'bg-violet-500/20 text-violet-300 border border-violet-500/30',
+    info: 'bg-blue-500/15 text-blue-300 border border-blue-500/25',
+    success: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25',
+    warning: 'bg-amber-500/15 text-amber-300 border border-amber-500/25',
   };
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${variants[variant]} ${className}`}>
@@ -84,9 +84,9 @@ export function StatusBadge({ status }: { status?: FeedbackStatus | string }) {
 export function Button({ children, onClick, variant = 'primary', size = 'md', className = '', type = 'button', disabled = false }: { children: ReactNode; onClick?: () => void; variant?: 'primary' | 'secondary' | 'ghost' | 'outline' | 'ai'; size?: 'sm' | 'md' | 'lg'; className?: string; type?: 'button' | 'submit'; disabled?: boolean }) {
   const variants: Record<string, string> = {
     primary: 'bg-gradient-to-r from-cyan-500 via-blue-600 to-violet-600 hover:from-cyan-400 hover:via-blue-500 hover:to-violet-500 text-white shadow-[0_0_20px_rgba(6,182,212,0.25)] border border-cyan-400/30',
-    secondary: 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-white/[0.08] dark:text-slate-100 dark:hover:bg-white/[0.15] dark:border dark:border-white/10',
-    ghost: 'hover:bg-slate-100 text-slate-700 dark:hover:bg-white/[0.08] dark:text-slate-300 dark:hover:text-white',
-    outline: 'border border-slate-300 hover:bg-slate-50 text-slate-700 dark:border-white/15 dark:hover:bg-white/[0.08] dark:text-slate-200 dark:hover:border-white/30',
+    secondary: 'bg-white/[0.08] text-slate-100 hover:bg-white/[0.15] border border-white/10',
+    ghost: 'hover:bg-white/[0.08] text-slate-300 hover:text-white',
+    outline: 'border border-white/15 hover:bg-white/[0.08] text-slate-200 hover:border-white/30',
     ai: 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)] border border-violet-400/30',
   };
   const sizes: Record<string, string> = {
@@ -116,22 +116,22 @@ export function ProgressBar({ value, max = 100, className = '', color = 'blue' }
   };
   const percent = Math.min((value / max) * 100, 100);
   return (
-    <div className={`h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden ${className}`}>
+    <div className={`h-2 rounded-full bg-slate-800/80 border border-white/5 overflow-hidden ${className}`}>
       <div className={`h-full rounded-full transition-all duration-700 ease-out ${colors[color]}`} style={{ width: `${percent}%` }} />
     </div>
   );
 }
 
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700/50 ${className}`} />;
+  return <div className={`animate-pulse rounded-lg bg-slate-800/60 ${className}`} />;
 }
 
 export function EmptyState({ icon, title, message, actionLabel, onAction }: { icon?: ReactNode; title: string; message: string; actionLabel?: string; onAction?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      {icon && <div className="mb-4 text-slate-300 dark:text-slate-600">{icon}</div>}
-      <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">{title}</h3>
-      <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mb-4">{message}</p>
+      {icon && <div className="mb-4 text-slate-500">{icon}</div>}
+      <h3 className="text-lg font-semibold text-slate-200 mb-2">{title}</h3>
+      <p className="text-sm text-slate-400 max-w-md mb-4">{message}</p>
       {actionLabel && onAction && (
         <Button variant="outline" onClick={onAction}>{actionLabel}</Button>
       )}
