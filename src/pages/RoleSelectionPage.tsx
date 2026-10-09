@@ -206,7 +206,7 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
   }, [currentPortal]);
 
   return (
-    <div className="relative h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col justify-between overflow-hidden">
+    <div className="relative min-h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col justify-between">
       
       {/* 100vw × 100vh FIXED FULL-SCREEN BACKGROUND IMAGE */}
       <div
@@ -217,34 +217,35 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
       {/* SOFT TRANSLUCENT OVERLAY */}
       <div className="fixed inset-0 w-full h-full bg-slate-950/60 backdrop-blur-[3px] z-10 pointer-events-none" />
 
-      {/* FIXED PAGE CONTENT WRAPPER */}
-      <div className="relative z-20 flex flex-col justify-between h-screen w-full overflow-hidden">
+      {/* PAGE CONTENT WRAPPER */}
+      <div className="relative z-20 flex flex-col justify-between min-h-screen w-full">
 
         {/* Fixed Glass Top Header */}
-        <header className="flex-shrink-0 px-6 py-3.5 flex items-center justify-between border-b border-white/10 bg-slate-950/50 backdrop-blur-xl z-30">
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
+        <header className="flex-shrink-0 px-4 sm:px-6 py-3 sm:py-3.5 flex items-center justify-between border-b border-white/10 bg-slate-950/70 backdrop-blur-xl z-30 sticky top-0">
+          <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group flex-shrink-0">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform flex-shrink-0">
               <Sparkles size={18} className="text-white" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-white leading-none">FEEDBACKIQ</h1>
-              <p className="text-[10px] font-semibold text-slate-300 uppercase tracking-widest mt-0.5">
+              <h1 className="text-base font-bold text-white leading-none whitespace-nowrap">FEEDBACKIQ</h1>
+              <p className="text-[10px] font-semibold text-slate-300 uppercase tracking-widest mt-0.5 whitespace-nowrap hidden sm:block">
                 {currentPortal.toUpperCase()} PORTAL
               </p>
             </div>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <Link
               to="/portal-selection"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-200 transition-all backdrop-blur-md"
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-200 transition-all backdrop-blur-md whitespace-nowrap"
             >
               <ArrowLeft size={14} />
-              <span>Back to Portal Selection</span>
+              <span className="hidden sm:inline">Back to Portal Selection</span>
+              <span className="sm:hidden">Portals</span>
             </Link>
             <Link
               to={`/login?portal=${currentPortal}`}
-              className="text-xs font-semibold text-white hover:text-blue-300 px-3 py-2 rounded-lg transition-colors"
+              className="text-xs font-semibold text-white hover:text-blue-300 px-2.5 sm:px-3 py-1.5 rounded-xl bg-blue-600/30 border border-blue-400/30 hover:bg-blue-600/50 transition-colors whitespace-nowrap"
             >
               Direct Login
             </Link>
@@ -252,10 +253,10 @@ export function RoleSelectionPage({ forcedPortal }: RoleSelectionPageProps) {
         </header>
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 sm:py-4 flex-1 flex flex-col justify-center items-center w-full min-h-0 overflow-y-auto lg:overflow-visible">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex-1 flex flex-col justify-start lg:justify-center items-center w-full">
           
           {/* Title Banner */}
-          <div className="text-center max-w-2xl mx-auto mb-3 sm:mb-4">
+          <div className="text-center max-w-2xl mx-auto mb-4 sm:mb-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-300 text-xs font-semibold mb-2 backdrop-blur-md">
               <span className="h-2 w-2 rounded-full bg-blue-400 animate-pulse" />
               {portalMeta.badge}

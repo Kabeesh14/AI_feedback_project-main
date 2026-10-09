@@ -242,7 +242,7 @@ export function StudentGoogleRegistration() {
   };
 
   return (
-    <div className="relative h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col justify-between overflow-hidden">
+    <div className="relative min-h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col justify-between">
       
       {/* 100vw × 100vh FIXED FULL-SCREEN BACKGROUND IMAGE */}
       <div
@@ -253,39 +253,40 @@ export function StudentGoogleRegistration() {
       {/* TRANSLUCENT OVERLAY */}
       <div className="fixed inset-0 w-full h-full bg-slate-950/35 backdrop-blur-[1px] z-10 pointer-events-none" />
 
-      {/* FIXED PAGE CONTENT WRAPPER */}
-      <div className="relative z-20 flex flex-col justify-between h-screen w-full overflow-hidden">
+      {/* PAGE CONTENT WRAPPER */}
+      <div className="relative z-20 flex flex-col justify-between min-h-screen w-full">
 
         {/* Fixed Glass Top Navbar */}
-        <header className="flex-shrink-0 px-6 py-3.5 border-b border-white/10 bg-slate-950/40 backdrop-blur-xl z-30">
+        <header className="flex-shrink-0 px-4 sm:px-6 py-3 sm:py-3.5 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl z-30 sticky top-0">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
-                <Sparkles size={18} className="text-white" />
+            <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group flex-shrink-0">
+              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform flex-shrink-0">
+                <Sparkles size={18} className="text-white sm:w-5 sm:h-5" />
               </div>
               <div>
-                <span className="text-base font-bold text-white tracking-tight">FEEDBACKIQ</span>
-                <span className="hidden sm:inline-block ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                <span className="text-base sm:text-lg font-bold text-white tracking-tight whitespace-nowrap">FEEDBACKIQ</span>
+                <span className="hidden sm:inline-block ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 whitespace-nowrap">
                   {roleConfig.portalName}
                 </span>
               </div>
             </Link>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <Link
                 to={`/login?role=${currentRole}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-200 transition-all"
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-200 transition-all whitespace-nowrap"
               >
                 <ArrowLeft size={14} />
-                <span>Back to Login</span>
+                <span className="hidden sm:inline">Back to Login</span>
+                <span className="sm:hidden">Login</span>
               </Link>
             </div>
           </div>
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 flex items-center justify-center px-4 py-3 sm:py-6 min-h-0 overflow-y-auto">
-          <div className="w-full max-w-lg rounded-3xl border border-white/15 bg-slate-900/60 backdrop-blur-2xl shadow-2xl p-6 sm:p-9 text-slate-100 relative">
+        <main className="flex-1 flex items-start sm:items-center justify-center px-4 py-6 sm:py-8">
+          <div className="w-full max-w-lg rounded-3xl border border-white/15 bg-slate-900/60 backdrop-blur-2xl shadow-2xl p-5 sm:p-9 text-slate-100 relative my-auto">
             
             {/* Header Badge */}
             <div className="flex items-center gap-3 mb-6">

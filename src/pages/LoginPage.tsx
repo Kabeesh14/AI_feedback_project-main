@@ -217,7 +217,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="relative h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col justify-between overflow-hidden">
+    <div className="relative min-h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col justify-between">
       
       {/* 100vw × 100vh FIXED FULL-SCREEN CLASSROOM BACKGROUND IMAGE */}
       <div
@@ -228,39 +228,40 @@ export function LoginPage() {
       {/* LIGHT/MODERATE TRANSLUCENT OVERLAY */}
       <div className="fixed inset-0 w-full h-full bg-slate-950/30 backdrop-blur-[1px] z-10 pointer-events-none" />
 
-      {/* FIXED PAGE CONTENT WRAPPER */}
-      <div className="relative z-20 flex flex-col justify-between h-screen w-full overflow-hidden">
+      {/* PAGE CONTENT WRAPPER */}
+      <div className="relative z-20 flex flex-col justify-between min-h-screen w-full">
 
         {/* Fixed Glass Top Navbar */}
-        <header className="flex-shrink-0 px-6 py-3.5 border-b border-white/10 bg-slate-950/50 backdrop-blur-xl z-30">
+        <header className="flex-shrink-0 px-4 sm:px-6 py-3 sm:py-3.5 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl z-30 sticky top-0">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
-                <Sparkles size={20} className="text-white" />
+            <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group flex-shrink-0">
+              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform flex-shrink-0">
+                <Sparkles size={18} className="text-white sm:w-5 sm:h-5" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-white leading-none">FEEDBACKIQ</h1>
-                <p className="text-[10px] font-semibold text-slate-300 uppercase tracking-widest mt-0.5">
+                <h1 className="text-base sm:text-lg font-bold text-white leading-none whitespace-nowrap">FEEDBACKIQ</h1>
+                <p className="text-[10px] font-semibold text-slate-300 uppercase tracking-widest mt-0.5 whitespace-nowrap hidden sm:block">
                   {selectedPortal.toUpperCase()} PORTAL
                 </p>
               </div>
             </Link>
 
             {/* Right side navigation (Light mode toggle removed) */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <Link
                 to={`/role-selection?portal=${selectedPortal}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-all backdrop-blur-md"
+                className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-all backdrop-blur-md whitespace-nowrap"
               >
                 <ArrowLeft size={14} />
-                <span>Back to Roles</span>
+                <span className="hidden sm:inline">Back to Roles</span>
+                <span className="sm:hidden">Roles</span>
               </Link>
             </div>
           </div>
         </header>
 
         {/* Main Content Area: Floating Glassmorphism Login Card */}
-        <main className="flex-1 flex items-center justify-center lg:justify-end max-w-7xl mx-auto w-full px-4 sm:px-6 py-2 sm:py-3 min-h-0 overflow-y-auto">
+        <main className="flex-1 flex items-start sm:items-center justify-center lg:justify-end max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
           
           {/* FLOATING GLASSMORPHISM CARD */}
           <div className="w-full max-w-lg rounded-3xl bg-slate-900/60 backdrop-blur-2xl border border-white/15 shadow-2xl shadow-black/80 p-5 sm:p-7 text-slate-100 my-auto">

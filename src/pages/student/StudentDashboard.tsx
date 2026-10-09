@@ -71,7 +71,7 @@ export function StudentDashboard() {
 
   return (
     <div
-      className="relative min-h-[calc(100vh-4rem)] w-full p-6 sm:p-8 lg:p-10 text-slate-100 font-['Onest',sans-serif]"
+      className="relative min-h-[calc(100vh-4rem)] w-full p-4 sm:p-8 lg:p-10 text-slate-100 font-['Onest',sans-serif]"
       style={{
         backgroundColor: 'transparent',
         color: '#eef0f6',

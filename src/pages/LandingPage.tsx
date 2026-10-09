@@ -26,7 +26,7 @@ export function LandingPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="relative h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col justify-between overflow-hidden">
+    <div className="relative min-h-screen w-full text-slate-100 selection:bg-blue-500 selection:text-white transition-colors duration-300 flex flex-col justify-between">
       
       {/* 100vw × 100vh FIXED FULL-SCREEN BACKGROUND IMAGE */}
       <div
@@ -37,38 +37,38 @@ export function LandingPage() {
       {/* SOFT TRANSLUCENT OVERLAY */}
       <div className="fixed inset-0 w-full h-full bg-slate-950/55 backdrop-blur-[2px] z-10 pointer-events-none" />
 
-      {/* FIXED PAGE CONTENT WRAPPER */}
-      <div className="relative z-20 flex flex-col justify-between h-screen w-full overflow-hidden">
+      {/* PAGE CONTENT WRAPPER */}
+      <div className="relative z-20 flex flex-col justify-between min-h-screen w-full">
         
         {/* Fixed Glass Top Navbar */}
-        <header className="flex-shrink-0 px-6 py-3.5 border-b border-white/10 bg-slate-950/50 backdrop-blur-xl z-30">
+        <header className="flex-shrink-0 px-4 sm:px-6 py-3 sm:py-3.5 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl z-30 sticky top-0">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             {/* Logo & Subtitle */}
-            <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
-                <Sparkles size={20} className="text-white" />
+            <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group flex-shrink-0">
+              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform flex-shrink-0">
+                <Sparkles size={18} className="text-white sm:w-5 sm:h-5" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-white leading-none">FEEDBACKIQ</h1>
-                <p className="text-[10px] font-semibold text-slate-300 uppercase tracking-widest mt-0.5">Institutional Intelligence</p>
+                <h1 className="text-base sm:text-lg font-bold text-white leading-none whitespace-nowrap">FEEDBACKIQ</h1>
+                <p className="text-[10px] font-semibold text-slate-300 uppercase tracking-widest mt-0.5 whitespace-nowrap hidden sm:block">Institutional Intelligence</p>
               </div>
             </Link>
 
             {/* Controls: Get Started Button (Light mode toggle removed) */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <button
                 onClick={() => navigate('/portal-selection')}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30 active:scale-[0.98] transition-all"
+                className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30 active:scale-[0.98] transition-all whitespace-nowrap"
               >
                 <span>GET STARTED</span>
-                <ArrowRight size={15} />
+                <ArrowRight size={14} className="hidden sm:inline" />
               </button>
             </div>
           </div>
         </header>
 
         {/* Hero Section */}
-        <section className="flex-1 flex items-center py-4 lg:py-6 overflow-y-auto lg:overflow-visible min-h-0">
+        <section className="flex-1 flex items-center py-6 sm:py-8 lg:py-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full my-auto">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
               
