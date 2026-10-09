@@ -18,7 +18,8 @@ import {
   Info,
   Layers,
   Flame,
-  Check
+  Check,
+  ChevronDown
 } from 'lucide-react';
 import type { Severity } from '@/types';
 
@@ -39,6 +40,7 @@ export function StudentReportIssue() {
   const navigate = useNavigate();
 
   const [category, setCategory] = useState<string>(CAMPUS_FACILITY_CATEGORIES[0].id);
+  const selectedCategoryInfo = CAMPUS_FACILITY_CATEGORIES.find(c => c.id === category) || CAMPUS_FACILITY_CATEGORIES[0];
   const [location, setLocation] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [severity, setSeverity] = useState<Severity>('medium');
@@ -210,8 +212,8 @@ export function StudentReportIssue() {
 
       {/* Main Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Step 1: Select Area / Facility Category */}
-        <Card className="p-6 bg-white/70 dark:bg-white/[0.03] backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm space-y-4">
+        {/* Step 1: Select Facility Area */}
+        <Card className="p-5 sm:p-6 bg-white/70 dark:bg-white/[0.03] backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="flex items-center justify-center w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-bold border border-cyan-500/30">
@@ -224,38 +226,64 @@ export function StudentReportIssue() {
             <span className="text-xs text-slate-400">Required</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {CAMPUS_FACILITY_CATEGORIES.map(cat => {
-              const isSelected = category === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setCategory(cat.id)}
-                  className={`flex flex-col text-left p-3.5 rounded-xl border transition-all duration-200 ${
-                    isSelected
-                      ? 'border-cyan-400 bg-cyan-500/10 shadow-[0_0_15px_rgba(6,182,212,0.15)] ring-1 ring-cyan-400/50'
-                      : 'border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/20 hover:bg-slate-50 dark:hover:bg-white/[0.04]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <span className="text-lg">{cat.icon}</span>
-                    {isSelected && (
-                      <span className="w-4 h-4 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center text-[10px]">
-                        <Check size={12} strokeWidth={3} />
-                      </span>
-                    )}
-                  </div>
-                  <span className={`text-sm font-semibold ${isSelected ? 'text-cyan-400' : 'text-slate-800 dark:text-slate-200'}`}>
-                    {cat.label}
-                  </span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
-                    {cat.desc}
-                  </span>
-                </button>
-              );
-            })}
+          {/* Selection Dropdown Button */}
+          <div className="relative">
+            <label htmlFor="facility-area-select" className="sr-only">Facility Area</label>
+            <select
+              id="facility-area-select"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full bg-slate-900/90 border border-white/15 rounded-xl pl-4 pr-10 py-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400 appearance-none cursor-pointer shadow-sm font-medium transition-all"
+            >
+              {CAMPUS_FACILITY_CATEGORIES.map(cat => (
+                <option key={cat.id} value={cat.id} className="bg-slate-900 text-white py-2">
+                  {cat.icon} {cat.label} ({cat.desc})
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+              <ChevronDown size={18} />
+            </div>
           </div>
+
+          {/* Compact Quick Selection Buttons */}
+          <div className="space-y-1.5">
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              Quick Selection Buttons
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {CAMPUS_FACILITY_CATEGORIES.map(cat => {
+                const isSelected = category === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setCategory(cat.id)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 active:scale-95 ${
+                      isSelected
+                        ? 'bg-cyan-500 text-slate-950 font-bold shadow-lg shadow-cyan-500/25 ring-2 ring-cyan-300'
+                        : 'bg-white/[0.04] text-slate-300 border border-white/10 hover:border-white/20 hover:bg-white/[0.08]'
+                    }`}
+                  >
+                    <span>{cat.icon}</span>
+                    <span>{cat.label}</span>
+                    {isSelected && <Check size={12} strokeWidth={3} className="ml-0.5" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Active Facility Information Banner */}
+          {selectedCategoryInfo && (
+            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/25 text-xs text-cyan-300 animate-in fade-in duration-200">
+              <span className="text-xl flex-shrink-0">{selectedCategoryInfo.icon}</span>
+              <div className="flex-1 min-w-0">
+                <span className="font-bold text-cyan-200">{selectedCategoryInfo.label}:</span>{' '}
+                <span className="text-slate-300">{selectedCategoryInfo.desc}</span>
+              </div>
+            </div>
+          )}
         </Card>
 
         {/* Step 2: Location and Description */}
