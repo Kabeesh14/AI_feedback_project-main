@@ -260,14 +260,14 @@ export function LoginPage() {
         </header>
 
         {/* Main Content Area: Floating Glassmorphism Login Card */}
-        <main className="flex-1 flex items-center justify-center lg:justify-end max-w-7xl mx-auto w-full px-4 sm:px-6 py-3 sm:py-6 min-h-0 overflow-y-auto lg:overflow-visible">
+        <main className="flex-1 flex items-center justify-center lg:justify-end max-w-7xl mx-auto w-full px-4 sm:px-6 py-2 sm:py-3 min-h-0 overflow-y-auto">
           
           {/* FLOATING GLASSMORPHISM CARD */}
-          <div className="w-full max-w-lg rounded-3xl bg-slate-900/60 backdrop-blur-2xl border border-white/15 shadow-2xl shadow-black/80 p-7 sm:p-9 text-slate-100">
+          <div className="w-full max-w-lg rounded-3xl bg-slate-900/60 backdrop-blur-2xl border border-white/15 shadow-2xl shadow-black/80 p-5 sm:p-7 text-slate-100 my-auto">
             
             {/* Header */}
-            <div className="mb-6 text-center sm:text-left">
-              <div className="flex items-center justify-between mb-3 text-xs">
+            <div className="mb-3.5 sm:mb-4 text-center sm:text-left">
+              <div className="flex items-center justify-between mb-2 text-xs">
                 <Link
                   to={`/role-selection?portal=${selectedPortal}`}
                   className="text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors font-medium"
@@ -286,25 +286,25 @@ export function LoginPage() {
 
               {/* Context Badge */}
               {selectedPortal === 'bus' && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-bold mb-2">
+                <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-bold mb-1.5">
                   <Bus size={13} />
                   <span>Bus Portal · {currentRoleTab.label} Login</span>
                 </div>
               )}
               {selectedPortal === 'hostel' && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-bold mb-2">
+                <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-bold mb-1.5">
                   <Home size={13} />
                   <span>Hostel Portal · {currentRoleTab.label} Login</span>
                 </div>
               )}
               {selectedPortal === 'education' && (
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-semibold mb-2">
+                <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-semibold mb-1.5">
                   <GraduationCap size={13} />
                   <span>Education Portal · {currentRoleTab.label} Login</span>
                 </div>
               )}
 
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-1">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white mb-0.5">
                 {selectedPortal === 'bus' ? 'Bus Portal' : selectedPortal === 'hostel' ? 'Hostel Portal' : 'Education Portal'}
               </h1>
               <p className="text-xs sm:text-sm text-slate-300">
@@ -313,8 +313,8 @@ export function LoginPage() {
             </div>
 
             {/* Interactive Role Selector for Current Portal */}
-            <div className="mb-5">
-              <div className="flex items-center justify-between mb-2">
+            <div className="mb-3.5 sm:mb-4">
+              <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
                   Select Your Role
                 </label>
@@ -323,7 +323,7 @@ export function LoginPage() {
                 </span>
               </div>
               
-              <div className={`grid ${availableRoleTabs.length === 3 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'} gap-1.5 p-1.5 rounded-2xl bg-slate-950/70 border border-white/10 backdrop-blur-md`}>
+              <div className={`grid ${availableRoleTabs.length === 3 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'} gap-1.5 p-1 rounded-2xl bg-slate-950/70 border border-white/10 backdrop-blur-md`}>
                 {availableRoleTabs.map(tab => {
                   const isActive = selectedRole === tab.role;
                   const Icon = tab.icon;
@@ -335,7 +335,7 @@ export function LoginPage() {
                         setSelectedRole(tab.role);
                         setErrorMsg(null);
                       }}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-[0.98] ${
+                      className={`py-1.5 px-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-[0.98] ${
                         isActive
                           ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border border-blue-400/40'
                           : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -352,18 +352,18 @@ export function LoginPage() {
 
             {/* Error Alert */}
             {errorMsg && (
-              <div className="mb-4 p-3 rounded-xl bg-red-950/80 border border-red-500/50 text-xs text-red-300">
+              <div className="mb-3 p-2.5 rounded-xl bg-red-950/80 border border-red-500/50 text-xs text-red-300">
                 {errorMsg}
               </div>
             )}
 
             {/* Login Form */}
-            <form onSubmit={handleFormLogin} className="space-y-4 mb-4">
+            <form onSubmit={handleFormLogin} className="space-y-2.5 sm:space-y-3 mb-3">
               
               {/* Department Dropdown for Academic Roles in Education */}
               {selectedPortal === 'education' && selectedRole !== 'bus_incharge' && selectedRole !== 'transport_incharge' && selectedRole !== 'hostel_warden' && (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-200 mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-200 mb-1">
                     Department {selectedRole !== 'management' && <span className="text-red-400">*</span>}
                   </label>
                   <div className="relative">
@@ -374,7 +374,7 @@ export function LoginPage() {
                         setSelectedDept(e.target.value as Department | '');
                         setErrorMsg(null);
                       }}
-                      className="w-full pl-10 pr-9 py-3 rounded-2xl border border-white/15 bg-slate-950/70 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition-colors text-xs sm:text-sm appearance-none cursor-pointer"
+                      className="w-full pl-10 pr-9 py-2.5 rounded-2xl border border-white/15 bg-slate-950/70 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition-colors text-xs sm:text-sm appearance-none cursor-pointer"
                     >
                       {selectedRole === 'management' ? (
                         <option value="" className="bg-slate-900 text-white py-1">
@@ -394,7 +394,7 @@ export function LoginPage() {
                     <ChevronDown size={18} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   </div>
                   {selectedRole === 'management' && (
-                    <p className="text-[11px] text-violet-300 mt-1.5 flex items-center gap-1.5">
+                    <p className="text-[11px] text-violet-300 mt-1 flex items-center gap-1.5">
                       <span>💡 Management has access to all departments or can focus on a specific department.</span>
                     </p>
                   )}
@@ -402,7 +402,7 @@ export function LoginPage() {
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-200 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-200 mb-1">
                   {currentRoleTab.idLabel}
                 </label>
                 <div className="relative">
@@ -412,13 +412,13 @@ export function LoginPage() {
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     placeholder={currentRoleTab.idPlaceholder}
-                    className="w-full pl-10 pr-4 py-3 rounded-2xl border border-white/15 bg-slate-950/60 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition-colors text-xs sm:text-sm"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-white/15 bg-slate-950/60 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition-colors text-xs sm:text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-200 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-200 mb-1">
                   Password
                 </label>
                 <div className="relative">
@@ -428,7 +428,7 @@ export function LoginPage() {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-11 py-3 rounded-2xl border border-white/15 bg-slate-950/60 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition-colors text-xs sm:text-sm"
+                    className="w-full pl-10 pr-11 py-2.5 rounded-2xl border border-white/15 bg-slate-950/60 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 transition-colors text-xs sm:text-sm"
                   />
                   <button
                     type="button"
@@ -442,7 +442,7 @@ export function LoginPage() {
               </div>
 
               {/* Remember Me & Forgot Password */}
-              <div className="flex items-center justify-between text-xs pt-1">
+              <div className="flex items-center justify-between text-xs pt-0.5">
                 <label className="flex items-center gap-2 cursor-pointer text-slate-300">
                   <input
                     type="checkbox"
@@ -465,7 +465,7 @@ export function LoginPage() {
               <button
                 type="submit"
                 disabled={!!loadingRole}
-                className="w-full py-3.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl shadow-blue-600/30 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 sm:py-3 px-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl shadow-blue-600/30 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
               >
                 {loadingRole ? (
                   <>
@@ -484,7 +484,7 @@ export function LoginPage() {
             {/* Continue with Google - Exclusively available for student role across all three portals */}
             {selectedRole === 'student' && (
               <>
-                <div className="relative my-5">
+                <div className="relative my-2.5 sm:my-3">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-white/10" />
                   </div>
@@ -499,7 +499,7 @@ export function LoginPage() {
                   type="button"
                   id="google-signin-button"
                   onClick={handleGoogleSignIn}
-                  className="w-full py-3.5 px-4 rounded-2xl border border-white/15 bg-white/5 hover:bg-white/10 text-white font-semibold text-sm transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-3 backdrop-blur-md shadow-sm hover:border-white/25 cursor-pointer"
+                  className="w-full py-2.5 sm:py-3 px-4 rounded-2xl border border-white/15 bg-white/5 hover:bg-white/10 text-white font-semibold text-sm transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-3 backdrop-blur-md shadow-sm hover:border-white/25 cursor-pointer"
                 >
                   <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
                     <path
@@ -529,7 +529,7 @@ export function LoginPage() {
         </main>
 
         {/* Translucent Glass Footer */}
-        <footer className="flex-shrink-0 py-3 px-6 border-t border-white/10 bg-slate-950/40 backdrop-blur-xl text-center text-xs text-slate-300">
+        <footer className="flex-shrink-0 py-2.5 px-6 border-t border-white/10 bg-slate-950/40 backdrop-blur-xl text-center text-xs text-slate-300">
           <p className="font-semibold text-white">FEEDBACKIQ · Institutional Feedback Intelligence Platform</p>
         </footer>
       </div>
