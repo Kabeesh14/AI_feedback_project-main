@@ -31,12 +31,21 @@ const optionalUpload = (req, res, next) => {
     memoryUpload(req, res, (err) => {
       if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(400).json({ success: false, message: 'File size exceeds maximum allowed limit of 5 MB.' });
+          return res.status(400).json({ success: false, message: 'File size exceeds maximum allowed limit of 500 KB.' });
         }
         return res.status(400).json({ success: false, message: `Upload error: ${err.message}` });
       } else if (err) {
         return res.status(err.statusCode || 400).json({ success: false, message: err.message });
       }
+
+      if (req.file && req.file.size < firebaseStorageService.MIN_IMAGE_SIZE_BYTES) {
+        const sizeKb = (req.file.size / 1024).toFixed(1);
+        return res.status(400).json({
+          success: false,
+          message: `File size (${sizeKb} KB) is below the minimum allowed limit of 5 KB.`
+        });
+      }
+
       next();
     });
   } else {

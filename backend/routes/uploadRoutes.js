@@ -22,12 +22,12 @@ const fileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-// 5 MB maximum file size limit (Section 6)
+// 500 KB maximum file size limit (5 KB to 500 KB allowed)
 const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: firebaseStorageService.MAX_IMAGE_SIZE_BYTES // 5 MB
+    fileSize: firebaseStorageService.MAX_IMAGE_SIZE_BYTES // 500 KB
   }
 });
 
@@ -42,7 +42,7 @@ router.post('/', authenticateToken, (req, res) => {
       if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({
           success: false,
-          message: 'File size exceeds maximum allowed limit of 5 MB.'
+          message: 'File size exceeds maximum allowed limit of 500 KB.'
         });
       }
       return res.status(400).json({
@@ -60,6 +60,14 @@ router.post('/', authenticateToken, (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'No image file uploaded. Please provide an image file under the "image" field.'
+      });
+    }
+
+    if (req.file.size < firebaseStorageService.MIN_IMAGE_SIZE_BYTES) {
+      const sizeKb = (req.file.size / 1024).toFixed(1);
+      return res.status(400).json({
+        success: false,
+        message: `File size (${sizeKb} KB) is below the minimum allowed limit of 5 KB.`
       });
     }
 

@@ -361,7 +361,7 @@ export function HostelFeedbackPage() {
                     ? 'Upload Photo Evidence of Issue (Optional — Broken equipment, water leak, damage, hygiene)'
                     : 'Upload Facility Photo (Optional)'
                 }
-                helpText="PNG, JPG, WEBP or GIF up to 10MB. Preview available instantly."
+                helpText="PNG, JPG, WEBP between 5 KB and 500 KB. Preview available instantly."
               />
             </div>
 

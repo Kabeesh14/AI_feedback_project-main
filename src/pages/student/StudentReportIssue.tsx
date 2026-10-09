@@ -356,7 +356,7 @@ export function StudentReportIssue() {
             onChange={(url) => setImageUrl(url)}
             portalTheme="cyan"
             label="Upload Photo or Evidence"
-            sublabel="Attach a photo of the damaged facility, broken equipment, or safety issue (PNG, JPG, WEBP up to 5MB)"
+            sublabel="Attach a photo of the damaged facility, broken equipment, or safety issue (PNG, JPG, WEBP between 5 KB and 500 KB)"
           />
         </Card>
 

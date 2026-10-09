@@ -19,9 +19,18 @@ export async function uploadImage(file: File): Promise<UploadResult> {
     throw new Error('Please select a valid image file (PNG, JPG, WEBP).');
   }
 
-  // Validate size (5MB per Section 6)
-  if (file.size > 5 * 1024 * 1024) {
-    throw new Error('Image size exceeds 5MB limit. Please choose a smaller image.');
+  // Validate size: 5 KB to 500 KB only
+  const MIN_SIZE_BYTES = 5 * 1024; // 5 KB
+  const MAX_SIZE_BYTES = 500 * 1024; // 500 KB
+
+  if (file.size < MIN_SIZE_BYTES) {
+    const sizeKb = (file.size / 1024).toFixed(1);
+    throw new Error(`Image size (${sizeKb} KB) is below the minimum allowed limit of 5 KB. Please select an image between 5 KB and 500 KB.`);
+  }
+
+  if (file.size > MAX_SIZE_BYTES) {
+    const sizeKb = (file.size / 1024).toFixed(1);
+    throw new Error(`Image size (${sizeKb} KB) exceeds the maximum allowed limit of 500 KB. Please select an image between 5 KB and 500 KB.`);
   }
 
   // Generate Base64 Data URL immediately for preview & fallback

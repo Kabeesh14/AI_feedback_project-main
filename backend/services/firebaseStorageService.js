@@ -10,8 +10,9 @@ if (!process.env.FIREBASE_PROJECT_ID) {
 }
 
 
-// Maximum allowed image size: 5 MB (Section 6)
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+// Allowed image size limits: 5 KB to 500 KB
+const MIN_IMAGE_SIZE_BYTES = 5 * 1024; // 5 KB
+const MAX_IMAGE_SIZE_BYTES = 500 * 1024; // 500 KB
 
 // Allowed image MIME types (Section 6)
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -141,12 +142,20 @@ function validateImageFile(file) {
     };
   }
 
-  // Check file size (5MB max)
-  if (file.size > MAX_IMAGE_SIZE_BYTES) {
-    const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+  // Check file size (5 KB min, 500 KB max)
+  if (file.size < MIN_IMAGE_SIZE_BYTES) {
+    const sizeKb = (file.size / 1024).toFixed(1);
     return {
       valid: false,
-      error: `File size (${sizeMb} MB) exceeds maximum allowed limit of 5 MB.`
+      error: `File size (${sizeKb} KB) is below the minimum allowed limit of 5 KB.`
+    };
+  }
+
+  if (file.size > MAX_IMAGE_SIZE_BYTES) {
+    const sizeKb = (file.size / 1024).toFixed(1);
+    return {
+      valid: false,
+      error: `File size (${sizeKb} KB) exceeds the maximum allowed limit of 500 KB.`
     };
   }
 
@@ -403,6 +412,7 @@ module.exports = {
   uploadFeedbackImage,
   verifyImageAccess,
   generateSignedImageUrl,
+  MIN_IMAGE_SIZE_BYTES,
   MAX_IMAGE_SIZE_BYTES,
   ALLOWED_MIME_TYPES,
   ALLOWED_EXTENSIONS

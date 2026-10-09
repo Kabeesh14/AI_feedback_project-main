@@ -19,6 +19,7 @@ interface ImageUploadProps {
   onChange: (url: string | null, base64?: string | null) => void;
   label?: string;
   sublabel?: string;
+  helpText?: string;
   portalTheme?: 'amber' | 'purple' | 'cyan' | 'blue';
   disabled?: boolean;
 }
@@ -27,10 +28,12 @@ export function ImageUpload({
   value,
   onChange,
   label = 'Upload Image / Proof',
-  sublabel = 'Attach a photo or screenshot (PNG, JPG, WEBP up to 5MB)',
+  sublabel,
+  helpText,
   portalTheme = 'amber',
   disabled = false,
 }: ImageUploadProps) {
+  const displaySublabel = sublabel || helpText || 'Attach a photo or screenshot (PNG, JPG, WEBP between 5 KB and 500 KB)';
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +74,24 @@ export function ImageUpload({
   const handleProcessFile = async (file: File) => {
     if (!file) return;
     setError(null);
+
+    const minSizeBytes = 5 * 1024; // 5 KB
+    const maxSizeBytes = 500 * 1024; // 500 KB
+
+    if (file.size < minSizeBytes) {
+      const sizeKb = (file.size / 1024).toFixed(1);
+      setError(`Image size (${sizeKb} KB) is below the minimum allowed limit of 5 KB.`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    if (file.size > maxSizeBytes) {
+      const sizeKb = (file.size / 1024).toFixed(1);
+      setError(`Image size (${sizeKb} KB) exceeds the maximum allowed limit of 500 KB.`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     setUploading(true);
 
     try {
@@ -171,7 +192,7 @@ export function ImageUpload({
                 Click or drag & drop to upload an image
               </p>
               <p className="text-xs text-slate-400 max-w-sm">
-                {sublabel}
+                {displaySublabel}
               </p>
             </>
           )}

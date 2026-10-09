@@ -386,7 +386,7 @@ export function BusFeedbackPage() {
                     ? 'Upload Photo Evidence of Issue (Optional — Bus condition, damaged seat, schedule delay, etc.)'
                     : 'Upload Commute Photo (Optional)'
                 }
-                helpText="PNG, JPG, WEBP or GIF up to 10MB. Preview available instantly."
+                helpText="PNG, JPG, WEBP between 5 KB and 500 KB. Preview available instantly."
               />
             </div>
 
